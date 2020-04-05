@@ -1,15 +1,18 @@
 '''
 Library for Google Sheets functions. 
 '''
-from constants import *
-from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
-import pickle
-import os
-import pandas as pd
-import re 
 import configparser
+import os
+import pickle
+import re
+
+import pandas as pd
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+
+from constants import *
+from google.auth.transport.requests import Request
+
 
 class GoogleSheet(object):
     '''
@@ -146,7 +149,7 @@ def read_values(sheetid: str, range_: str, config: configparser.ConfigParser) ->
     else:
         return values
     
-def insert_values(sheetid: str, body: dict, config: configparser.ConfigParser, **kwargs) -> dict 
+def insert_values(sheetid: str, body: dict, config: configparser.ConfigParser, **kwargs) -> dict:
     '''
     Insert values into spreadsheet.
     Args : 
@@ -287,7 +290,7 @@ def get_trailing_spaces(data: pd.DataFrame) -> pd.DataFrame:
     return error_table
 
 
-def get_NA_errors(data: -> pd.DataFrame) -> pd.DataFrame:
+def get_NA_errors(data: pd.DataFrame) -> pd.DataFrame:
     '''
     Generate error table for mispelled NA values.  
     We chose to write them as "NA", and so far we only
@@ -334,7 +337,7 @@ def fix_cells(sheetid, sheetname, error_table, column_dict, config):
     assert 'value' in error_table.columns 
     
     fixed = 0
-    for i,error in error_table.iterrows():      
+    for _, error in error_table.iterrows():      
         row       = error['row']
         a1 = column_dict[error['column']] + row
         range_    = '{}!{}'.format(sheetname, a1)

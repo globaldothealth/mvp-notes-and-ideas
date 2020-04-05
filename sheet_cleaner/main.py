@@ -1,15 +1,16 @@
 '''
 Run all sheet cleaning scripts.
 '''
-testing = False 
+testing = False
 
-from functions import *
-from constants import *
-from datetime import datetime
-import time
+import configparser
 import os
 import shutil
-import configparser
+import time
+from datetime import datetime
+
+from constants import *
+from functions import *
 
 configfile = '/home/tbrewer/nCoV2019/code/sheet_cleaner/.CONFIG'
 config = configparser.ConfigParser()
@@ -134,4 +135,3 @@ if __name__ == '__main__':
             message = f'{dt} {E}\n'
             F.write(message)
         raise E
-
