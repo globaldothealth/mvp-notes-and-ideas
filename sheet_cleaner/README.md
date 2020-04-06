@@ -52,3 +52,13 @@ A post-processing script is added to produce the final csv that is exported to g
 ```
 
 This script reads through all the sheets present in the [config file](https://github.com/open-covid-data/mvp-notes-and-ideas/blob/master/sheet_cleaner/CONFIG) and produces the final csv and error reports.
+
+### Priorities (high to low)
+
+1. Low-hanging fruits
+   1. remove unused columns
+   1. Move contributors to google groups/unify sharing
+1. Move geocoding logic out of the spreasheets
+   1. Build offline geocoder
+   1. Call geocoder from script generating the output csv.
+1. Build script to split sheets and associated logic.
