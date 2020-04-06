@@ -12,7 +12,11 @@ from shutil import copyfile
 
 class GoogleSheet(object):
     '''
-    Simple object to help organize different sheets
+    Simple object to help organizing.
+    Attributes: 
+    :spreadsheetid:-> str, Google Spreadsheet ID (from link). 
+    :name: -> list or str, sheet name (list when multiple sheets in 1 spreadsheet).
+    :ID: -> str, code for ID column in sheets (specific to region). 
     '''
 
     def __init__(self, *args):
@@ -178,7 +182,6 @@ def clean_data(data: pd.DataFrame, colnames: list) -> pd.DataFrame:
     :colnames: list, list of columns we are keeping for final version
     '''
     df = data.copy()
-    print(df.columns)
     df.rename({x: x.strip() for x in df.columns}, inplace=True, axis=1)
 
     # drop invalid lat/longs
@@ -191,14 +194,18 @@ def clean_data(data: pd.DataFrame, colnames: list) -> pd.DataFrame:
     # Only keep those that have a date_confirmation
     df['date_confirmation'] = df['date_confirmation'].str.strip() # some have empty spaces 
     dc = df.date_confirmation
-    valid_date = (dc != '') & ~(dc.isnull())
+    dc = dc.fillna('')
+    dc = dc.apply(lambda x: x.split('-')[1].strip() if '-'  in x else x.strip())
+    valid_date = (dc != '') & ~(dc.isnull()) & dc.str.match('.*\d{2}\.\d{2}\.\d{4}.*') 
     df = df[valid_date]
+    df['date_confirmation'] = df['date_confirmation'].str.strip()
 
     # Basic cleaning for strings
     for c in ['city', 'province', 'country']:
         df[c] = df[c].str.strip()
         df[c] = df[c].str.title()
         df[c] = df[c].str.replace('\xa0', ' ') # encoding for a space that was found in some entries.
+
 
     # Only keep the columns we want
     df = df[colnames]
@@ -372,7 +379,9 @@ def animation_formating_geo(infile: str, outfile: str, groupby: str = 'week') ->
 
     full.fillna('', inplace=True)
     full['geoid']  = full.apply(lambda s: s['latitude'] + '|' + s['longitude'], axis=1) # To reference locations by a key
-    full['date_confirmation'] = full.date_confirmation.apply(lambda x: x.split('-')[0])
+    full['date_confirmation'] = full.date_confirmation.apply(lambda x: x.split('-')[0].strip())
+    
+
     full['date']   = pd.to_datetime(full['date_confirmation'], format="%d.%m.%Y")  # to ensure sorting is done by date value (not str)
     
     if groupby == 'week':

@@ -8,7 +8,7 @@ email  : thomas.brewer@childrens.harvard.edu
 
 
 
-testing = False
+testing = True
 
 import configparser
 import pandas as pd
@@ -18,7 +18,7 @@ import requests
 import sys
 import re
 
-configfile = '/var/www/scripts/covid-19/DataPipeline/.CONF'
+configfile = './.CONF'
 config = configparser.ConfigParser()
 config.read(configfile)
 logfile = config['FILES'].get('LOG')
@@ -30,33 +30,24 @@ jhu_url = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse
 COLNAMES = ['ID', 'latitude', 'longitude', 'city', 'province', 'country',
             'age', 'sex', 'symptoms', 'source', 'date_confirmation', 'geo_resolution'] # desired columns from sheets
 # A1 notation ranges from sheets
-
 def main():
     try :
-        sheets       = get_GoogleSheets(config)
-        unique_data  = []
-        full_data    = []
+        # Line list data
+        latest_data_path = config['FILES'].get('SHEETDATA', './latestdata.csv')
+        req = requests.get('https://raw.githubusercontent.com/beoutbreakprepared/nCoV2019/master/latest_data/latestdata.csv')
+        if req.status_code == 200:
+            with open(latest_data_path, 'w') as f:
+                f.write(req.text)
+        else :
+            sys.exit(1)
 
-        for sheet in sheets:
-            sheet.data = load_sheet(sheet, config)
-            # Edit ids in original to keep track
-            if sheet.name == 'outside_Hubei':
-                sheet.data.ID = sheet.data.ID.apply(lambda x: f'000-1-{x}')
-            elif sheet.name == 'Hubei':
-                sheet.data.ID = sheet.data.ID.apply(lambda x: f'000-2-{x}')
-            
-            # filter out United States because we are getting that data from JHU now.
-            filter_ = ~sheet.data.country.isin(['United States', 'Virgin Islands, U.S.'])
-            sheet.data = sheet.data[filter_]
+        df = pd.read_csv(latest_data_path, dtype=str)
+        filter_ = ~df.country.isin(['United States', 'Virgin Islands, U.S.'])
+        df = df[filter_]
+        full_data = clean_data(df, COLNAMES)
+    
 
-            full= clean_data(sheet.data, COLNAMES)
-            full_data.append(full)
-
-
-        #  type change list -> DataFrame
-        full_data = pd.concat(full_data, ignore_index=True, sort=False)
-
-        # Get JHU data
+        # JHU data
         req = requests.get(jhu_url)
         if req.status_code == 200:
             with open(jhu_file, 'w') as F:
@@ -124,29 +115,7 @@ def main():
         fullpath  = config['FILES'].get('FULL')
         savedata(full_data, fullpath)
         
-        # aggregated data
-        unique_data = {'data': unique_data} 
-        uniquepath  = config['FILES'].get('TOTALS')
-        savedata(unique_data, uniquepath)
-
         # animation data
-        anipath = config['FILES'].get('ANIMATION')
-        anidata = animation_formating(fullpath)
-        savedata(anidata, anipath)
-
-        # aggregated data, geojson
-        #geo_unique = {'
-                
-        # save all results
-        #fullpath   = config['FILES'].get('FULL')
-        #savedata(full_data, fullpath)
-    
-        #uniquepath = config['FILES'].get('TOTAL_OLD')
-        #savedata(unique_data, uniquepath)
-
-        geo_uniquepath = config['FILES'].get('GEO_TOTALS')
-        convert_to_geojson(uniquepath, geo_uniquepath)
-
         geo_anipath    = config['FILES'].get('GEO_ANIME')
         animation_formating_geo(fullpath, geo_anipath)
         
