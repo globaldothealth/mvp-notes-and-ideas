@@ -31,13 +31,13 @@ def main():
             continue 
 
         r  = insert_ids(s, config)
-        time.sleep(args.sleep_time)
+        time.sleep(args.sleep_time_sec)
         
         rs = update_lat_long_columns(s, config)
-        time.sleep(args.sleep_time)
+        time.sleep(args.sleep_time_sec)
         
         r  = update_admin_columns(s, config)
-        time.sleep(args.sleep_time)
+        time.sleep(args.sleep_time_sec)
 
       
         ### Clean Private Sheet Entries. ###
@@ -54,7 +54,7 @@ def main():
             fix_cells(s.spreadsheetid, s.name, trailing, column_dict, config)
             values = read_values(s.spreadsheetid, range_, config)
             data   = values2dataframe(values)
-            time.sleep(args.sleep_time)
+            time.sleep(args.sleep_time_sec)
 
         # fix N/A => NA
         na_errors = get_NA_errors(data)
@@ -62,7 +62,7 @@ def main():
             fix_cells(s.spreadsheetid, s.name, na_errors, column_dict, config)
             values = read_values(s.spreadsheetid, range_, config)
             data   = values2dataframe(values)
-            time.sleep(args.sleep_time)
+            time.sleep(args.sleep_time_sec)
 
          # Regex fixes
         fixable, non_fixable = generate_error_tables(data)
@@ -70,7 +70,7 @@ def main():
             fix_cells(s.spreadsheetid, s.name, fixable, column_dict, config)
             values = read_values(s.spreadsheetid, range_, config)
             data   = values2dataframe(values)
-            time.sleep(args.sleep_time)
+            time.sleep(args.sleep_time_sec)
 
         
         clean = data[~data.ID.isin(non_fixable.ID)]
