@@ -24,3 +24,8 @@ This command creates the folder `ocd-env` if it doesn't exist. You don't need to
 4. Install the dependencies:
 
     $ pip install -r ./requirements.txt
+
+5. Work on your Python! When you're done, deactivate the environment:
+
+    $ deactivate
+
