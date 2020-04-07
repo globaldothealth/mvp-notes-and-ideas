@@ -15,7 +15,7 @@ rgx_na_value = anchor_wrap(na_string)
 
 rgx_single_age = "(0|[1-9]{1}[0-9]{0,2})"
 rgx_age_range  = "{}-{}".format(rgx_single_age, rgx_single_age)
-rgx_date_      = "[0-9]{2}\.[0-9]{2}\.20(19|20)"
+rgx_date_      = r"[0-9]{2}\.[0-9]{2}\.20(19|20)"
 rgx_date_range = f"{rgx_date_} - {rgx_date_}"
 rgx_left_date_range  = f"- {rgx_date_}"
 rgx_right_date_range = f"{rgx_date_} -"
