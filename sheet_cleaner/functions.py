@@ -76,7 +76,6 @@ def get_GoogleSheets(config: configparser.ConfigParser) -> list:
     Returns :
         values (list) : list of GoogleSheet objects.
     '''
-    print("sections:", list(config.sections()))
     # fetch for original sheet
     sheet0 = config['ORIGINAL_SHEET']
     name1 = sheet0.get('NAME1')
