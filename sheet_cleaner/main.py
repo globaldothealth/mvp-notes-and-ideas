@@ -3,6 +3,7 @@ Run all sheet cleaning scripts.
 '''
 testing = False
 
+import argparse
 import configparser
 import os
 import shutil
@@ -12,10 +13,15 @@ from datetime import datetime
 from constants import *
 from functions import *
 
-configfile = '/home/tbrewer/nCoV2019/code/sheet_cleaner/.CONFIG'
+parser = argparse.ArgumentParser(
+    description='Cleanup sheet and output generation script')
+parser.add_argument('-c', '--config_file', type=str, default="CONFIG",
+                    help='Path to the config file')
+parser.add_argument('--sleep_time_sec', type=int, default=30,
+                    help='Sleep time between various fixes (to be removed)')
+args = parser.parse_args()
 config = configparser.ConfigParser()
-config.read(configfile)
-sleeptime = 30
+config.read(args.config_file)
 
 def main():
     sheets = get_GoogleSheets(config)
@@ -25,13 +31,13 @@ def main():
             continue 
 
         r  = insert_ids(s, config)
-        time.sleep(sleeptime)
+        time.sleep(args.sleep_time)
         
         rs = update_lat_long_columns(s, config)
-        time.sleep(sleeptime)
+        time.sleep(args.sleep_time)
         
         r  = update_admin_columns(s, config)
-        time.sleep(sleeptime)
+        time.sleep(args.sleep_time)
 
       
         ### Clean Private Sheet Entries. ###
@@ -48,7 +54,7 @@ def main():
             fix_cells(s.spreadsheetid, s.name, trailing, column_dict, config)
             values = read_values(s.spreadsheetid, range_, config)
             data   = values2dataframe(values)
-            time.sleep(sleeptime)
+            time.sleep(args.sleep_time)
 
         # fix N/A => NA
         na_errors = get_NA_errors(data)
@@ -56,7 +62,7 @@ def main():
             fix_cells(s.spreadsheetid, s.name, na_errors, column_dict, config)
             values = read_values(s.spreadsheetid, range_, config)
             data   = values2dataframe(values)
-            time.sleep(sleeptime)
+            time.sleep(args.sleep_time)
 
          # Regex fixes
         fixable, non_fixable = generate_error_tables(data)
@@ -64,7 +70,7 @@ def main():
             fix_cells(s.spreadsheetid, s.name, fixable, column_dict, config)
             values = read_values(s.spreadsheetid, range_, config)
             data   = values2dataframe(values)
-            time.sleep(sleeptime)
+            time.sleep(args.sleep_time)
 
         
         clean = data[~data.ID.isin(non_fixable.ID)]
