@@ -16,6 +16,13 @@ class Geocode(NamedTuple):
     country_new: str
     admin_id: int
 
+_INPUT_ROW = 8
+_LAT_ROW = 10
+_LNG_ROW = 11
+_GEO_RESOLUTION_ROW = 12
+_COUNTRY_NEW_ROW = 17
+_ADMIN_ID_ROW = 18
+
 class CSVGeocoder:
     def __init__(self, init_csv_path: str):
         # Build a giant map of concatenated strings for fast lookup.
@@ -33,11 +40,16 @@ class CSVGeocoder:
                 # Some admin_ids are not set (or set to "TBD") which can't parse
                 # nicely, default to 0 for those.
                 try:
-                    admin_id = float(row[18])
+                    admin_id = float(row[_ADMIN_ID_ROW])
                 except ValueError:
                     admin_id = 0
-                geocode = Geocode(float(row[10]), float(row[11]), row[12], row[17], admin_id)
-                self.geocodes[row[8].lower()] = geocode
+                geocode = Geocode(
+                    float(row[_LAT_ROW]),
+                    float(row[_LNG_ROW]),
+                    row[_GEO_RESOLUTION_ROW],
+                    row[_COUNTRY_NEW_ROW],
+                    admin_id)
+                self.geocodes[row[_INPUT_ROW].lower()] = geocode
         logging.info("Loaded %d geocodes from %s", len(self.geocodes), init_csv_path)
         
 
