@@ -15,7 +15,7 @@ from functions import *
 
 parser = argparse.ArgumentParser(
     description='Cleanup sheet and output generation script')
-parser.add_argument('--config_file', type=str, default="CONFIG",
+parser.add_argument('-c', '--config_file', type=str, default="CONFIG",
                     help='Path to the config file')
 parser.add_argument('--sleep_time_sec', type=int, default=30,
                     help='Sleep time between various fixes (to be removed)')
