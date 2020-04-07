@@ -6,9 +6,12 @@ import os
 import pickle
 import re
 
+from typing import Dict, List
+
 import pandas as pd
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from google.oauth2 import service_account
 
 from constants import *
 from google.auth.transport.requests import Request
@@ -73,7 +76,7 @@ def get_GoogleSheets(config: configparser.ConfigParser) -> list:
     Returns :
         values (list) : list of GoogleSheet objects.
     '''
-    
+    print("sections:", list(config.sections()))
     # fetch for original sheet
     sheet0 = config['ORIGINAL_SHEET']
     name1 = sheet0.get('NAME1')
@@ -81,12 +84,13 @@ def get_GoogleSheets(config: configparser.ConfigParser) -> list:
     sid = sheet0.get('SID')
     ID  = sheet0.get('ID')
     s1 = GoogleSheet(sid, name1, ID, config)
-    s2 = GoogleSheet(sid, name2, ID, config)
-
-    sheets = [s1, s2] 
+    sheets = [s1]
+    if name2:
+        s2 = GoogleSheet(sid, name2, ID, config)
+        sheets.append(s2)
 
     # Fetch for Regional Sheets. (follow pattern Sheet1, Sheet2, ... )
-    pattern = '^SHEET\d*$'
+    pattern = r'^SHEET\d*$'
     sections = config.sections()
     for s in sections:
         if re.match(pattern, s):
@@ -110,33 +114,11 @@ def read_values(sheetid: str, range_: str, config: configparser.ConfigParser) ->
         list: values from range_
 
     TODO: reconfigure as Sheet object method. 
-    TODO: reconfigure so auth is separate.
     '''
     
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
-    TOKEN  = config['SHEETS'].get('TOKEN')
-    CREDENTIALS = config['SHEETS'].get('CREDENTIALS')
     
-    creds = None
-    # The file token.pickle stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists(TOKEN): 
-        with open(TOKEN, 'rb') as token:
-            creds = pickle.load(token)
-
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                CREDENTIALS, SCOPES)
-            creds = flow.run_local_server(port=0)
-
-        # Save the credentials for the next run
-        with open(TOKEN, 'wb') as token:
-            pickle.dump(creds, token)
+    creds = get_creds(config, SCOPES)
 
     service = build('sheets', 'v4', credentials=creds)
 
@@ -148,6 +130,37 @@ def read_values(sheetid: str, range_: str, config: configparser.ConfigParser) ->
         raise ValueError('Sheet data not found')
     else:
         return values
+
+def get_creds(config: Dict, scopes: List[str]):
+    """Gets credentials based on the given config file and scopes.
+    
+    Saves the pickled creds to a file for later re-use.
+    """
+    creds = None
+    TOKEN  = config['SHEETS'].get('TOKEN')
+    CREDENTIALS = config['SHEETS'].get('CREDENTIALS')
+    if os.path.exists(TOKEN): 
+        with open(TOKEN, 'rb') as token:
+            creds = pickle.load(token)
+
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            if config['SHEETS'].get('IS_SERVICE_ACCOUNT'):
+                creds = service_account.Credentials.from_service_account_file(
+                    CREDENTIALS, scopes=scopes)
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    CREDENTIALS, scopes)
+                creds = flow.run_local_server(port=0)
+
+        # Save the credentials for the next run
+        with open(TOKEN, 'wb') as token:
+            pickle.dump(creds, token)
+    return creds
+     
     
 def insert_values(sheetid: str, body: dict, config: configparser.ConfigParser, **kwargs) -> dict:
     '''
@@ -171,40 +184,15 @@ def insert_values(sheetid: str, body: dict, config: configparser.ConfigParser, *
     }
 
     TODO: reconfigure as Sheet object method. 
-    TODO: reconfigure so auth is separate.
     '''
     
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-    TOKEN       = config['SHEETS']['TOKEN']
-    CREDENTIALS = config['SHEETS']['CREDENTIALS']
-    INPUTOPTION = kwargs['inputoption'] if 'inputoption' in kwargs.keys() else 'USER_ENTERED'
     
-    # values = list
-    # placement = A1 notation range.
-    creds = None
-    # The file token.pickle stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists(TOKEN): 
-        with open(TOKEN, 'rb') as token:
-            creds = pickle.load(token)
-
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                CREDENTIALS, SCOPES)
-            creds = flow.run_local_server(port=0)
-
-        # Save the credentials for the next run
-        with open(TOKEN, 'wb') as token:
-            pickle.dump(creds, token)
-
-    service = build('sheets', 'v4', credentials=creds)
+    INPUTOPTION = kwargs['inputoption'] if 'inputoption' in kwargs.keys() else 'USER_ENTERED'
+    creds = get_creds(config, SCOPES)
 
     # Call the Sheets API
+    service = build('sheets', 'v4', credentials=creds)
     sheet   = service.spreadsheets()
     request = sheet.values().update(spreadsheetId=sheetid,
                                     range=body['range'],
