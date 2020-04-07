@@ -15,11 +15,19 @@ class Geocode(NamedTuple):
     geo_resolution: str
     country_new: str
     admin_id: int
+    location: str
+    admin3: str
+    admin2: str
+    admin1: str
 
 _INPUT_ROW = 8
 _LAT_ROW = 10
 _LNG_ROW = 11
 _GEO_RESOLUTION_ROW = 12
+_LOCATION_ROW = 13
+_ADMIN3_ROW = 14
+_ADMIN2_ROW = 15
+_ADMIN1_ROW = 16
 _COUNTRY_NEW_ROW = 17
 _ADMIN_ID_ROW = 18
 
@@ -48,7 +56,11 @@ class CSVGeocoder:
                     float(row[_LNG_ROW]),
                     row[_GEO_RESOLUTION_ROW],
                     row[_COUNTRY_NEW_ROW],
-                    admin_id)
+                    admin_id,
+                    row[_LOCATION_ROW],
+                    row[_ADMIN3_ROW],
+                    row[_ADMIN2_ROW],
+                    row[_ADMIN1_ROW])
                 self.geocodes[row[_INPUT_ROW].lower()] = geocode
         logging.info("Loaded %d geocodes from %s", len(self.geocodes), init_csv_path)
         
