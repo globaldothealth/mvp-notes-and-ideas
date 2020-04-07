@@ -17,5 +17,5 @@ class TestCSVGeocoder(unittest.TestCase):
         self.assertEqual(geo.country_new, "France")
         self.assertEqual(geo.admin_id, 1)
 
-    def test_not_founload(self):
+    def test_not_found(self):
         self.assertIsNone(self.geocoder.Geocode("foo", "bar", "baz"))

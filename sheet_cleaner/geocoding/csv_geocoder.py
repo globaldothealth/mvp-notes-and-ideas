@@ -1,4 +1,4 @@
-"""CSV geocoder contains a geocoder based on the former sheets VLOOKUP impl.
+"""This package contains a geocoder based on the former sheets VLOOKUP impl.
 
 It uses a dump of the geo_admin sheet to csv to load all the locations in
 memory and allows for fast access.
@@ -19,11 +19,15 @@ class Geocode(NamedTuple):
 class CSVGeocoder:
     def __init__(self, init_csv_path: str):
         # Build a giant map of concatenated strings for fast lookup.
-        # Do not try to be smart, just replicate whatever the spreadsheet was doing.
-        # Data's so small it can all fit in memory and allow for fast lookups.
+        # Do not try to be smart, just replicate whatever the spreadsheet was
+        # doing. Data's so small it can all fit in memory and allow for fast
+        # lookups.
         
         self.geocodes :Dict[str, Geocode] = {}
         with open(init_csv_path, newline="") as csvfile:
+            # Delimiter is \t instead of , because google spreadsheets were
+            # exporting lat,lng with commas, leading to an invalid number of
+            # columns per row :(
             rows = csv.reader(csvfile, delimiter="\t")
             for row in rows:
                 # Some admin_ids are not set (or set to "TBD") which can't parse
