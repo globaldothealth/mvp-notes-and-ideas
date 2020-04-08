@@ -4,40 +4,43 @@
 CREDENTIALS = /path/to/google_API_credentials.json
 TOKEN = /path/to/credentials_token.pickle
 
-[ORIGINAL_SHEET]
-# Original Private sheet
-NAME1 = outside_Hubei
-NAME2 = Hubei
+[SHEET0]
+NAME = outside_Hubei
 SID = 1kNKj5FxvAfRBVgikTzNq0EXyggI62_97_8rEo3IjwOk
 ID = 000
 
 [SHEET1]
+NAME = Hubei
+SID = 1kNKj5FxvAfRBVgikTzNq0EXyggI62_97_8rEo3IjwOk
+ID = 000
+
+[SHEET2]
 NAME = Africa_COVID19_line_list
 SID = 1RzBTkVR91KTY8mXDxkQvOtEMBmDN1gRLvKWwzPxQScs
 ID = 001
 
-[SHEET2]
+[SHEET3]
 NAME = Asia_Oceania_COVID19_line_list
 SID = 1ogu4P3Z8jOJvEtX4P10CxoavUqoQc0_vBQ2JyzryEwI
 ID = 002
 
-[SHEET3]
+[SHEET4]
 NAME = Europe_COVID19_line_list
 SID = 1bcE2sKkCoV-slW9pfJLJMTbNFjZ-CHEKDYdoRg0mobk
 ID = 003
 
-[SHEET4]
+[SHEET5]
 NAME = LATAM_COVID19_line_list
 SID = 1MKS8E5BTKBB5z3UA0suiNkePtYQYvrWL8fQB0HxkynI
 ID = 004
 
-[SHEET5]
+[SHEET6]
 NAME = North_America_COVID19_line_list
 SID = 1gvYnjXkyhI_8FEJ5IpSiPr4cvCxQzw5w6J8uEti7UH4
 #SID = 1VJtwiuh3V4llz-Ay64HY8TICyGvN1Adqrux_w1EoW70
 ID = 005
 
-[SHEET6]
+[SHEET7]
 NAME = North_America_COVID19_line_list
 SID = 1FDMXRoz6hmJLY-NTzoiQ-B0_ANcB3MTBretnm6U389A
 ID = 006
