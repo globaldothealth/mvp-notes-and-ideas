@@ -1,5 +1,8 @@
 [DEFAULT]
 
+[GEOCODING]
+TSV_PATH = geocoding/geo_admin.tsv
+
 [SHEETS]
 CREDENTIALS = /path/to/google_API_credentials.json
 TOKEN = /path/to/credentials_token.pickle
@@ -56,16 +59,3 @@ LATEST = /path/to/latest_data/
 
 [GIT]
 REPO = /home/tbrewer/nCoV2019/
-
-
-
-
-
-
-
-
-
-
-
-
-

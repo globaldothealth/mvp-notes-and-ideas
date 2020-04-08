@@ -10,6 +10,8 @@ import shutil
 import time
 from datetime import datetime
 
+from geocoding import csv_geocoder
+# TODO: remove * imports and only import what's necessary.
 from constants import *
 from functions import *
 
@@ -29,18 +31,8 @@ def main():
     sheets = get_GoogleSheets(config)
     for_github = [] 
     for s in sheets:
-        if not s.name:
-            continue 
-
-        r  = insert_ids(s, config)
+        insert_ids(s, config)
         time.sleep(args.sleep_time_sec)
-        
-        rs = update_lat_long_columns(s, config)
-        time.sleep(args.sleep_time_sec)
-        
-        r  = update_admin_columns(s, config)
-        time.sleep(args.sleep_time_sec)
-
 
         ### Clean Private Sheet Entries. ###
         # note : private sheet gets updated on the fly and redownloaded to ensure continuity between fixes (granted its slower).
@@ -106,6 +98,21 @@ def main():
     
     all_data = pd.concat(all_data, ignore_index=True)
     all_data = all_data.sort_values(by='ID')
+
+    # Fill geo columns.
+    geocoder = csv_geocoder.CSVGeocoder(config['GEOCODING'].get('TSV_PATH'))
+    for i, row in all_data.iterrows():
+        geocode = geocoder.Geocode(row.city, row.province, row.country)
+        if not geocode:
+            continue
+        all_data.at[i, 'latitude'] = geocode.lat
+        all_data.at[i, 'longitude'] = geocode.lng
+        all_data.at[i, 'geo_resolution'] = geocode.geo_resolution
+        all_data.at[i, 'location'] = geocode.location
+        all_data.at[i, 'admin3'] = geocode.admin3
+        all_data.at[i, 'admin2'] = geocode.admin2
+        all_data.at[i, 'admin1'] = geocode.admin1
+        all_data.at[i, 'admin_id'] = geocode.admin_id
     
     #drop_invalid_ids = []
     #for i, row in all_data.iterrows():

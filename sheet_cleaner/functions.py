@@ -13,6 +13,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 
+# TODO: remove * imports and only import what's necessary.
 from constants import *
 from google.auth.transport.requests import Request
 
@@ -33,38 +34,16 @@ class GoogleSheet(object):
         self.ID = id
         config = config
         
-        if self.name is not None:
-            r = f'{self.name}!A1:AG1'
-            self.columns = read_values(self.spreadsheetid, r, config)[0]
-            for i, c in enumerate(self.columns):
+        r = f'{self.name}!A1:AG1'
+        self.columns = read_values(self.spreadsheetid, r, config)[0]
+        for i, c in enumerate(self.columns):
 
-                # 'country' column had disappeared
-                if c.strip() == '' and self.columns[i-1] == 'province':
-                    self.columns[i] = 'country'
+            # 'country' column name had disappeared
+            if c.strip() == '' and self.columns[i-1] == 'province':
+                self.columns[i] = 'country'
 
-                # some white space gets added unoticed sometimes 
-                self.columns[i] = c.strip()
-
-            # Get Geo Admin columns (for VLOOKUP function input)
-            r = 'geo_admin!A1:AG2'
-            values = read_values(self.spreadsheetid, r, config)
-            self.geoadmin = values[0]
-            firstrow = values[1]
-    
-            # some geo admin sheets have repeated column names, but some are empty
-            # implementing to keep the one that has at least 1 value in it. 
-            nlats = len([x for x in self.geoadmin if x == 'latitude'])
-            nlons = len([x for x in self.geoadmin if x == 'longitude'])
-            ngeos = len([x for x in self.geoadmin if x == 'geo_resolution'])
-            if nlats > 1 or nlons > 1 or ngeos > 1:
-                for i in range(len(self.geoadmin)):
-                    if firstrow[i] == '' and self.geoadmin[i] in ['latitude', 'longitude', 'geo_resolution']:
-                        self.geoadmin[i] = ''
-
-                
-        else:
-            self.columns = None
-            self.geoadmin = None
+            # some white space gets added unoticed sometimes 
+            self.columns[i] = c.strip()
         
 
 def get_GoogleSheets(config: configparser.ConfigParser) -> list:
@@ -250,7 +229,7 @@ def get_trailing_spaces(data: pd.DataFrame) -> pd.DataFrame:
     Returns :
         error_table (pd.DataFrame) : table listing cells with errors.
     '''
-    df = data.copy() 
+    df = data.copy()
     
     error_table = pd.DataFrame(columns=['row', 'ID', 'column', 'value', 'fix'])
     for c in df.columns:
@@ -410,7 +389,6 @@ def insert_ids(Sheet: GoogleSheet, config: configparser.ConfigParser) -> dict:
 
     # Import columns to assert positions when updating
     print('insert_ids', Sheet.name)
-    print(Sheet.columns)
     id_col = alpha[Sheet.columns.index('ID')]
     if 'country' in Sheet.columns:
         country_col = alpha[Sheet.columns.index('country')]
@@ -478,144 +456,3 @@ def insert_ids(Sheet: GoogleSheet, config: configparser.ConfigParser) -> dict:
         'values': new_values[:-1]
     }
     return insert_values(Sheet.spreadsheetid, body, config, inputoption='RAW')
-    
-    
-def update_lat_long_columns(Sheet: GoogleSheet, config: configparser.ConfigParser) -> dict:
-    '''
-    Input Lookup function into lat/long columns that have associated IDs
-    '''
-
-    sheetid   = Sheet.spreadsheetid
-    sheetname = Sheet.name
-
-    # Get columns for lat, long, and geo_resoluion
-    # this is in the data sheet. 
-    columns = Sheet.columns
-    id_col = alpha[columns.index('ID')]
-    lat_col = alpha[columns.index('latitude')]
-    lon_col = alpha[columns.index('longitude')]
-    geo_col = alpha[columns.index('geo_resolution')]
-
-    shift = 1 - alpha.index('I')
-    geoAdmin_lat = str(shift + Sheet.geoadmin.index('latitude'))
-    geoAdmin_lon = str(shift + Sheet.geoadmin.index('longitude'))
-    geoAdmin_res = str(shift + Sheet.geoadmin.index('geo_resolution'))
-
-
-    # Defining range by column name as not all sheets have the same structure. 
-    id_range_  = f'{sheetname}!{id_col}:{id_col}'
-    lat_range_ = f'{sheetname}!{lat_col}:{lat_col}'
-    lon_range_ = f'{sheetname}!{lon_col}:{lon_col}'
-    geo_range_ = f'{sheetname}!{geo_col}:{geo_col}'
-
-    ids  = read_values(sheetid, id_range_, config)
-    
-    start = 2
-    end   = len(ids) + 1 
-
-    # make entries 
-    htemplate = '=IFNA(VLOOKUP(D{}&";"&E{}&";"&F{},geo_admin!I:S,' + geoAdmin_lat + ', false),)'
-    itemplate = '=IFNA(VLOOKUP(D{}&";"&E{}&";"&F{},geo_admin!I:S,' + geoAdmin_lon + ', false),)'
-    jtemplate = '=IFNA(VLOOKUP(D{}&";"&E{}&";"&F{},geo_admin!I:S,' + geoAdmin_res + ', false),)'
-    
-
-    
-    lat_entries = []
-    lon_entries = []
-    geo_entries = []
-    for row in range(start, end):
-        lat_entries.append(htemplate.format(row, row, row))
-        lon_entries.append(itemplate.format(row, row, row))
-        geo_entries.append(jtemplate.format(row, row, row))
-        
-    lat_body = {
-        'range': f'{sheetname}!{lat_col}{start}:{lat_col}{end}',
-        'majorDimension': 'ROWS',
-        'values': [[x] for x in lat_entries]
-    }
-    lon_body = {
-        'range': f'{sheetname}!{lon_col}{start}:{lon_col}{end}',
-        'majorDimension': 'ROWS',
-        'values': [[x] for x in lon_entries]
-    }
-
-    geo_body = {
-        'range': f'{sheetname}!{geo_col}{start}:{geo_col}{end}',
-        'majorDimension': 'ROWS',
-        'values': [[x] for x in geo_entries]
-    }
-
-    responses = []
-    for body in [lat_body, lon_body, geo_body]:
-        r = insert_values(sheetid, body, config, inputoption='USER_ENTERED')
-        responses.append(r)
-   
-    return responses
-
-def update_admin_columns(Sheet: GoogleSheet, config: configparser.ConfigParser) -> dict:
-    '''
-    Input function into columns AA-AF.
-    '''
-    
-    if Sheet.name in ['outside_Hubei', 'Hubei']:
-        pass    
-
-    sheetname = Sheet.name
-    sheetid = Sheet.spreadsheetid
-
-    range0 = f'{sheetname}!A:A' # ids
-    ranges = ['{}!A{}:A{}'.format(sheetname, x, x) for x in ['A', 'B', 'C', 'D', 'E', 'F']]
-        
-    #values = [read_values(sheetid, r, config) for r in ranges]
-    #max_   = max([len(x) for x in values])
-    
-    #N_new = len(ids) - max_
-    #start = max_  + 1
-    #end   = start + N_new
-    
-
-    
-    # Find columns we want to insert lookup functions into.
-    columns = Sheet.columns
-    insert_columns = {k :index2A1(columns.index(k)) for k in ['location', 'admin3', 'admin2', 'admin1', 'country_new', 'admin_id']}
-
-   # location_col = alpha[columns.index('location')]
-   # admin3_col = alpha[columns.index('admin3')]
-   # admin2_col = alpha[columns.index('admin2')]
-   # admin1_col = alpha[columns.index('admin1')]
-   # country_new_col = alpha[columns.index('country_new')]
-   # admin_id_col = alpha[columns.index('admin_id')]
-
-    # Look for appropriate columns in geo_admin sheet (these have changed, so not necessarily static). 
-    # shifting because the VLOOKUP function takes first column in range as 1. (ignores the rest)
-
-    shift = 1 - alpha.index('I')
-    geoadmin_indices = {k : str(shift + Sheet.geoadmin.index(k)) for k in insert_columns.keys()}
-
-    template = '=IFNA(VLOOKUP(D{}&";"&E{}&";"&F{},geo_admin!I:S,REPLACEME, false), )'
-    templates = {k : template.replace("REPLACEME", v) for k, v in geoadmin_indices.items()}
- 
-
-    ids    = read_values(sheetid, range0, config)
-    start = 2 
-    end = len(ids) + 1 # Ranges are 1 indexed. 
-    entries = []
-    for row in range(start, end):
-        entry = [t.format(row, row, row) for t in templates.values()]
-        entries.append(entry)
-    
-    entries = {k: [] for k in templates.keys()}
-    for k, t in templates.items() :
-        for row in range(start, end):
-            entries[k].append([t.format(row, row, row)])
-        
-        A1 = insert_columns[k]
-        body = {
-            "range" : f'{sheetname}!{A1}{start}:{A1}{end}',
-            'majorDimension': 'ROWS',
-            'values' : entries[k]
-        }
-        response = insert_values(sheetid, body, config, inputoption='USER_ENTERED')
-
-    
-    return response
