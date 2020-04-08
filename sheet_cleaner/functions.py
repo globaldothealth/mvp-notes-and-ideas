@@ -56,19 +56,8 @@ def get_GoogleSheets(config: configparser.ConfigParser) -> list:
     Returns :
         values (list) : list of GoogleSheet objects.
     '''
-    # fetch for original sheet
-    sheet0 = config['ORIGINAL_SHEET']
-    name1 = sheet0.get('NAME1')
-    name2 = sheet0.get('NAME2')
-    sid = sheet0.get('SID')
-    ID  = sheet0.get('ID')
-    s1 = GoogleSheet(sid, name1, ID, config)
-    sheets = [s1]
-    if name2:
-        s2 = GoogleSheet(sid, name2, ID, config)
-        sheets.append(s2)
-
-    # Fetch for Regional Sheets. (follow pattern Sheet1, Sheet2, ... )
+    # Fetch all sections in config referring to sheets.
+    sheets = []
     pattern = r'^SHEET\d*$'
     sections = config.sections()
     for s in sections:
@@ -78,7 +67,7 @@ def get_GoogleSheets(config: configparser.ConfigParser) -> list:
             name = config[s]['NAME']
             googlesheet = GoogleSheet(sid, name, id_, config)
             sheets.append(googlesheet)
-            
+    print(sheets)
     return sheets
 
 def read_values(sheetid: str, range_: str, config: configparser.ConfigParser) -> list:
