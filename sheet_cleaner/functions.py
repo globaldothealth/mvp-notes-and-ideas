@@ -24,13 +24,14 @@ class GoogleSheet(object):
     :spreadsheetid:-> str, Google Spreadsheet ID (from url).
     :name: -> list or str, sheet name (list when multiple sheets in 1 spreadsheet).
     :ID: -> str, code for ID column in sheets (specific to region).
+    :config: -> Dict, config dictionary as parsed at startup.
     '''
 
-    def __init__(self, *args):
-        self.spreadsheetid = args[0]
-        self.name = args[1]
-        self.ID = args[2]
-        config = args[3]
+    def __init__(self, spreadsheetid, name, id, config):
+        self.spreadsheetid = spreadsheetid
+        self.name = name
+        self.ID = id
+        config = config
         
         if self.name is not None:
             r = f'{self.name}!A1:AG1'
