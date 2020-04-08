@@ -29,7 +29,9 @@ config.read(args.config_file)
 
 def main():
     sheets = get_GoogleSheets(config)
-    for_github = [] 
+    for_github = []
+    # Load geocoder early so that invalid tsv paths errors are caught early on.
+    geocoder = csv_geocoder.CSVGeocoder(config['GEOCODING'].get('TSV_PATH'))
     for s in sheets:
         insert_ids(s, config)
         time.sleep(args.sleep_time_sec)
@@ -100,7 +102,6 @@ def main():
     all_data = all_data.sort_values(by='ID')
 
     # Fill geo columns.
-    geocoder = csv_geocoder.CSVGeocoder(config['GEOCODING'].get('TSV_PATH'))
     for i, row in all_data.iterrows():
         geocode = geocoder.Geocode(row.city, row.province, row.country)
         if not geocode:
@@ -113,6 +114,11 @@ def main():
         all_data.at[i, 'admin2'] = geocode.admin2
         all_data.at[i, 'admin1'] = geocode.admin1
         all_data.at[i, 'admin_id'] = geocode.admin_id
+        all_data.at[i, 'country_new'] = geocode.country_new
+    # Reorganize csv columns so that they are in the same order as when we
+    # used to have those geolocation within the spreadsheet.
+    # This is to avoid breaking latestdata.csv consumers.
+    all_data = all_data[["ID","age","sex","city","province","country","latitude","longitude","geo_resolution","date_onset_symptoms","date_admission_hospital","date_confirmation","symptoms","lives_in_Wuhan","travel_history_dates","travel_history_location","reported_market_exposure","additional_information","chronic_disease_binary","chronic_disease","source","sequence_available","outcome","date_death_or_discharge","notes_for_discussion","location","admin3","admin2","admin1","country_new","admin_id","data_moderator_initials","travel_history_binary"]]
     
     #drop_invalid_ids = []
     #for i, row in all_data.iterrows():
