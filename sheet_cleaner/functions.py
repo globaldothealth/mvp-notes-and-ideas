@@ -34,7 +34,7 @@ class GoogleSheet(object):
         self.ID = id
         config = config
         
-        r = f'{self.name}!A1:AG1'
+        r = f'{self.name}!A1:X1'
         self.columns = read_values(self.spreadsheetid, r, config)[0]
         for i, c in enumerate(self.columns):
 
@@ -67,7 +67,6 @@ def get_GoogleSheets(config: configparser.ConfigParser) -> list:
             name = config[s]['NAME']
             googlesheet = GoogleSheet(sid, name, id_, config)
             sheets.append(googlesheet)
-    print(sheets)
     return sheets
 
 def read_values(sheetid: str, range_: str, config: configparser.ConfigParser) -> list:
@@ -324,8 +323,6 @@ def generate_error_tables(data):
     table = ErrorTest(data, ['age'], rgx_age, table)
     table = ErrorTest(data, ['sex'], rgx_sex, table)
     table = ErrorTest(data, ['city', 'province', 'country'], rgx_country, table)
-    table = ErrorTest(data, ['latitude', 'longitude'], rgx_latlong, table)
-    table = ErrorTest(data, ['geo_resolution'], rgx_geo_res, table)
     table = ErrorTest(data, date_columns, rgx_date, table)
     table = ErrorTest(data, ['lives_in_Wuhan'], rgx_lives_in_wuhan, table)
     fixable_errors = pd.DataFrame(columns=['row', 'ID', 'column', 'value', 'fix'])
@@ -347,15 +344,6 @@ def generate_error_tables(data):
 
         elif col  == 'country':
             pass
-
-        elif col in ['latitude', 'longitude']:
-            pass
-
-        elif col == 'geo_resolution':
-            s = row['value']
-            test = bool(re.match(rgx_geo_res, s.replace(' ', '')))
-            if test:
-                fix = s.replace(' ', '')
 
         elif col in date_columns:
             pass
