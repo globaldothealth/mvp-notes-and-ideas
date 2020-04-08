@@ -19,6 +19,8 @@ parser.add_argument('-c', '--config_file', type=str, default="CONFIG",
                     help='Path to the config file')
 parser.add_argument('--sleep_time_sec', type=int, default=30,
                     help='Sleep time between various fixes (to be removed)')
+parser.add_argument('-p', '--push_to_git', default=False, const=True, action="store_const", dest='push_to_git',
+                    help='Whether to push to the git repo specified in the config')
 args = parser.parse_args()
 config = configparser.ConfigParser()
 config.read(args.config_file)
@@ -27,7 +29,7 @@ def main():
     sheets = get_GoogleSheets(config)
     for_github = [] 
     for s in sheets:
-        if s.name is None:
+        if not s.name:
             continue 
 
         r  = insert_ids(s, config)
@@ -39,7 +41,7 @@ def main():
         r  = update_admin_columns(s, config)
         time.sleep(args.sleep_time_sec)
 
-      
+
         ### Clean Private Sheet Entries. ###
         # note : private sheet gets updated on the fly and redownloaded to ensure continuity between fixes (granted its slower).
         range_      = f'{s.name}!A:AG'
@@ -64,7 +66,7 @@ def main():
             data   = values2dataframe(values)
             time.sleep(args.sleep_time_sec)
 
-         # Regex fixes
+        # Regex fixes
         fixable, non_fixable = generate_error_tables(data)
         if len(fixable) > 0:
             fix_cells(s.spreadsheetid, s.name, fixable, column_dict, config)
@@ -116,19 +118,20 @@ def main():
     all_data.to_csv(file_name, index=False) 
     all_data.to_csv(latest_name, index=False)    
 
-    # Create script for uploading to github
-    for_github.extend([file_name, latest_name])
-    script  = 'set -e\n'
-    script += 'cd {}\n'.format(config['GIT']['REPO'])
-    script += 'git pull origin master\n'
-    
-    for g in for_github:
-        script += f'git add {g}\n'
-    script += 'git commit -m "data update"\n'
-    script += 'git push origin master\n'
-    script += f'cd {os.getcwd()}\n'
-    print(script)
-    os.system(script)
+    if args.push_to_git:
+        # Create script for uploading to github
+        for_github.extend([file_name, latest_name])
+        script  = 'set -e\n'
+        script += 'cd {}\n'.format(config['GIT']['REPO'])
+        script += 'git pull origin master\n'
+        
+        for g in for_github:
+            script += f'git add {g}\n'
+        script += 'git commit -m "data update"\n'
+        script += 'git push origin master\n'
+        script += f'cd {os.getcwd()}\n'
+        print(script)
+        os.system(script)
 
 
 

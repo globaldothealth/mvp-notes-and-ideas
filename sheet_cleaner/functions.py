@@ -362,7 +362,7 @@ def generate_error_tables(data):
     fixable_errors = pd.DataFrame(columns=['row', 'ID', 'column', 'value', 'fix'])
 
     not_fixable = []
-    for i, r in table.iterrows():
+    for _, r in table.iterrows():
         row = r.copy()
         fix = False
         col = row['column']
