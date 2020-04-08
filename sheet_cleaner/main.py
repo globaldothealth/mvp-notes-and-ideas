@@ -29,24 +29,19 @@ def main():
     sheets = get_GoogleSheets(config)
     for_github = [] 
     for s in sheets:
-        print("Processing sheet", s.name)
         if not s.name:
             continue 
 
-        print("Inserting IDs")
         r  = insert_ids(s, config)
         time.sleep(args.sleep_time_sec)
         
-        print("Updating lat lng")
         rs = update_lat_long_columns(s, config)
         time.sleep(args.sleep_time_sec)
         
-        print("Updating admin columns")
         r  = update_admin_columns(s, config)
         time.sleep(args.sleep_time_sec)
 
-      
-        print("Cleaning up private sheet")
+
         ### Clean Private Sheet Entries. ###
         # note : private sheet gets updated on the fly and redownloaded to ensure continuity between fixes (granted its slower).
         range_      = f'{s.name}!A:AG'
@@ -55,7 +50,6 @@ def main():
         column_dict = {c:index2A1(i) for i,c in enumerate(columns)} # to get A1 notation, doing it now to ensure proper order
         data        = values2dataframe(values)
 
-        print("Fixing trailing space")
         # Trailing Spaces
         trailing = get_trailing_spaces(data)
         if len(trailing) > 0:
@@ -64,7 +58,6 @@ def main():
             data   = values2dataframe(values)
             time.sleep(args.sleep_time_sec)
 
-        print("Fixing N/A => NA")
         # fix N/A => NA
         na_errors = get_NA_errors(data)
         if len(na_errors) > 0:
@@ -74,7 +67,6 @@ def main():
             time.sleep(args.sleep_time_sec)
 
         # Regex fixes
-        print("Running regexp fixes")
         fixable, non_fixable = generate_error_tables(data)
         if len(fixable) > 0:
             fix_cells(s.spreadsheetid, s.name, fixable, column_dict, config)
@@ -90,7 +82,6 @@ def main():
         non_fixable = non_fixable.sort_values(by='ID')
         
 
-        print("Saving error report")
         # Save error_reports
         # These are separated by Sheet.
         directory   = config['FILES']['ERRORS']
