@@ -4,6 +4,9 @@
 CREDENTIALS = /path/to/google_API_credentials.json
 TOKEN = /path/to/credentials_token.pickle
 
+[GEOCODING]
+TSV_PATH = geocoding/geo_admin.tsv
+
 [ORIGINAL_SHEET]
 # Original Private sheet
 NAME1 = outside_Hubei
@@ -53,16 +56,3 @@ LATEST = /path/to/latest_data/
 
 [GIT]
 REPO = /home/tbrewer/nCoV2019/
-
-
-
-
-
-
-
-
-
-
-
-
-
