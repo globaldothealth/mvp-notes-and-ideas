@@ -44,7 +44,7 @@ class CSVGeocoder:
             # exporting lat,lng with commas, leading to an invalid number of
             # columns per row :(
             rows = csv.reader(csvfile, delimiter="\t")
-            for i, row in enumerate(rows):
+            for row in rows:
                 # Some admin_ids are not set (or set to "TBD") which can't parse
                 # nicely, default to 0 for those.
                 try:
