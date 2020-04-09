@@ -4,6 +4,7 @@ Library for Google Sheets functions.
 import configparser
 import os
 import pickle
+import logging
 import re
 
 from typing import Dict, List
@@ -87,7 +88,7 @@ def read_values(sheetid: str, range_: str, config: configparser.ConfigParser) ->
     
     creds = get_creds(config, SCOPES)
 
-    service = build('sheets', 'v4', credentials=creds)
+    service = build('sheets', 'v4', credentials=creds, cache_discovery=False)
 
     # Call the Sheets API
     sheet   = service.spreadsheets()
@@ -159,7 +160,7 @@ def insert_values(sheetid: str, body: dict, config: configparser.ConfigParser, *
     creds = get_creds(config, SCOPES)
 
     # Call the Sheets API
-    service = build('sheets', 'v4', credentials=creds)
+    service = build('sheets', 'v4', credentials=creds, cache_discovery=False)
     sheet   = service.spreadsheets()
     request = sheet.values().update(spreadsheetId=sheetid,
                                     range=body['range'],
@@ -376,7 +377,7 @@ def insert_ids(Sheet: GoogleSheet, config: configparser.ConfigParser) -> dict:
     '''
 
     # Import columns to assert positions when updating
-    print('insert_ids', Sheet.name)
+    logging.info('insert_ids in sheet %s', Sheet.name)
     id_col = alpha[Sheet.columns.index('ID')]
     if 'country' in Sheet.columns:
         country_col = alpha[Sheet.columns.index('country')]
