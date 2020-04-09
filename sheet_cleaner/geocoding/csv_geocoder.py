@@ -20,16 +20,16 @@ class Geocode(NamedTuple):
     admin2: str
     admin1: str
 
-_INPUT_ROW = 8
-_LAT_ROW = 10
-_LNG_ROW = 11
-_GEO_RESOLUTION_ROW = 12
-_LOCATION_ROW = 13
-_ADMIN3_ROW = 14
-_ADMIN2_ROW = 15
-_ADMIN1_ROW = 16
-_COUNTRY_NEW_ROW = 17
-_ADMIN_ID_ROW = 18
+_INPUT_ROW = 0
+_LAT_ROW = 1
+_LNG_ROW = 2
+_GEO_RESOLUTION_ROW = 3
+_LOCATION_ROW = 4
+_ADMIN3_ROW = 5
+_ADMIN2_ROW = 6
+_ADMIN1_ROW = 7
+_COUNTRY_NEW_ROW = 8
+_ADMIN_ID_ROW = 9
 
 class CSVGeocoder:
     def __init__(self, init_csv_path: str):
@@ -48,7 +48,7 @@ class CSVGeocoder:
                 # Some admin_ids are not set (or set to "TBD") which can't parse
                 # nicely, default to 0 for those.
                 try:
-                    admin_id = float(row[_ADMIN_ID_ROW])
+                    admin_id = int(row[_ADMIN_ID_ROW])
                 except ValueError:
                     admin_id = 0
                 geocode = Geocode(
