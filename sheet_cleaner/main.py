@@ -5,6 +5,7 @@ testing = False
 
 import argparse
 import configparser
+import logging
 import os
 import shutil
 import time
@@ -23,16 +24,19 @@ parser.add_argument('--sleep_time_sec', type=int, default=30,
                     help='Sleep time between various fixes (to be removed)')
 parser.add_argument('-p', '--push_to_git', default=False, const=True, action="store_const", dest='push_to_git',
                     help='Whether to push to the git repo specified in the config')
-args = parser.parse_args()
-config = configparser.ConfigParser()
-config.read(args.config_file)
 
 def main():
+    args = parser.parse_args()
+    config = configparser.ConfigParser()
+    config.read(args.config_file)
+    logging.basicConfig(filename='cleanup.log', level=logging.INFO)
+
     sheets = get_GoogleSheets(config)
     for_github = []
     # Load geocoder early so that invalid tsv paths errors are caught early on.
     geocoder = csv_geocoder.CSVGeocoder(config['GEOCODING'].get('TSV_PATH'))
     for s in sheets:
+        logging.info("Processing sheet %s", s.name)
         insert_ids(s, config)
         time.sleep(args.sleep_time_sec)
 
@@ -47,6 +51,7 @@ def main():
         # Trailing Spaces
         trailing = get_trailing_spaces(data)
         if len(trailing) > 0:
+            logging.info('fixing %d trailing whitespace', len(trailing))
             fix_cells(s.spreadsheetid, s.name, trailing, column_dict, config)
             values = read_values(s.spreadsheetid, range_, config)
             data   = values2dataframe(values)
@@ -55,6 +60,7 @@ def main():
         # fix N/A => NA
         na_errors = get_NA_errors(data)
         if len(na_errors) > 0:
+            logging.info('fixing %d N/A -> NA', len(na_errors))
             fix_cells(s.spreadsheetid, s.name, na_errors, column_dict, config)
             values = read_values(s.spreadsheetid, range_, config)
             data   = values2dataframe(values)
@@ -63,6 +69,7 @@ def main():
         # Regex fixes
         fixable, non_fixable = generate_error_tables(data)
         if len(fixable) > 0:
+            logging.info('fixing %d regexps', len(fixable))
             fix_cells(s.spreadsheetid, s.name, fixable, column_dict, config)
             values = read_values(s.spreadsheetid, range_, config)
             data   = values2dataframe(values)
@@ -78,6 +85,7 @@ def main():
 
         # Save error_reports
         # These are separated by Sheet.
+        logging.info('Saving error reports')
         directory   = config['FILES']['ERRORS']
         file_name   = f'{s.name}.error-report.csv'
         error_file  = os.path.join(directory, file_name)
@@ -102,10 +110,12 @@ def main():
     all_data = all_data.sort_values(by='ID')
 
     # Fill geo columns.
+    geocode_matched = 0
     for i, row in all_data.iterrows():
         geocode = geocoder.Geocode(row.city, row.province, row.country)
         if not geocode:
             continue
+        geocode_matched += 1
         all_data.at[i, 'latitude'] = geocode.lat
         all_data.at[i, 'longitude'] = geocode.lng
         all_data.at[i, 'geo_resolution'] = geocode.geo_resolution
@@ -115,6 +125,7 @@ def main():
         all_data.at[i, 'admin1'] = geocode.admin1
         all_data.at[i, 'admin_id'] = geocode.admin_id
         all_data.at[i, 'country_new'] = geocode.country_new
+    logging.info("Geocode matched %d/%d", geocode_matched, len(all_data))
     # Reorganize csv columns so that they are in the same order as when we
     # used to have those geolocation within the spreadsheet.
     # This is to avoid breaking latestdata.csv consumers.
@@ -125,13 +136,16 @@ def main():
     #    if row['ID'].str.match('
 
     # save
+    logging.info("Saving files to disk")
     dt = datetime.now().strftime('%Y-%m-%dT%H%M%S')
     file_name   = config['FILES']['DATA'].replace('TIMESTAMP', dt)
     latest_name = os.path.join(config['FILES']['LATEST'], 'latestdata.csv')
-    all_data.to_csv(file_name, index=False) 
-    all_data.to_csv(latest_name, index=False)    
+    all_data.to_csv(file_name, index=False)
+    all_data.to_csv(latest_name, index=False)
+    logging.info("Wrote %s, %s", file_name, latest_name)
 
     if args.push_to_git:
+        logging.info("Pushing to github")
         # Create script for uploading to github
         for_github.extend([file_name, latest_name])
         script  = 'set -e\n'
@@ -149,11 +163,4 @@ def main():
 
 
 if __name__ == '__main__':
-    try:
-        main()
-    except Exception as E:
-        with open(config['FILES']['LOG'], 'a') as F:   
-            dt = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            message = f'{dt} {E}\n'
-            F.write(message)
-        raise E
+    main()
