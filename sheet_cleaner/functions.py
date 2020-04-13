@@ -14,38 +14,10 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 
-# TODO: remove * imports and only import what's necessary.
-from constants import *
+from constants import rgx_age, rgx_sex, rgx_country, rgx_date, rgx_lives_in_wuhan, date_columns
 from google.auth.transport.requests import Request
+from objects import GoogleSheet
 
-
-class GoogleSheet(object):
-    '''
-    Simple object to help added when we started getting multiple sheets.
-    Attributes:
-    :spreadsheetid:-> str, Google Spreadsheet ID (from url).
-    :name: -> list or str, sheet name (list when multiple sheets in 1 spreadsheet).
-    :ID: -> str, code for ID column in sheets (specific to region).
-    :config: -> Dict, config dictionary as parsed at startup.
-    '''
-
-    def __init__(self, spreadsheetid, name, id, config):
-        self.spreadsheetid = spreadsheetid
-        self.name = name
-        self.ID = id
-        config = config
-        
-        r = f'{self.name}!A1:X1'
-        self.columns = read_values(self.spreadsheetid, r, config)[0]
-        for i, c in enumerate(self.columns):
-
-            # 'country' column name had disappeared
-            if c.strip() == '' and self.columns[i-1] == 'province':
-                self.columns[i] = 'country'
-
-            # some white space gets added unoticed sometimes 
-            self.columns[i] = c.strip()
-        
 
 def get_GoogleSheets(config: configparser.ConfigParser) -> list:
     '''
@@ -66,108 +38,14 @@ def get_GoogleSheets(config: configparser.ConfigParser) -> list:
             id_ = config[s]['ID']
             sid = config[s]['SID']
             name = config[s]['NAME']
-            googlesheet = GoogleSheet(sid, name, id_, config)
+            googlesheet = GoogleSheet(sid, name, id_, 
+                    config['SHEETS'].get("TOKEN"),
+                    config['SHEETS'].get('CREDENTIALS'))
+
             sheets.append(googlesheet)
     return sheets
 
-def read_values(sheetid: str, range_: str, config: configparser.ConfigParser) -> list:
-    '''
-    Read values from Sheet and return as is
-    Args : 
-        sheetid (str) : spreadsheet id (from url).
-        range_ (str)  : range to read in A1 notation.
-        config (ConfigParser) : configuration
     
-    Returns : 
-        list: values from range_
-
-    TODO: reconfigure as Sheet object method. 
-    '''
-    
-    SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
-    
-    creds = get_creds(config, SCOPES)
-
-    service = build('sheets', 'v4', credentials=creds, cache_discovery=False)
-
-    # Call the Sheets API
-    sheet   = service.spreadsheets()
-    values  = sheet.values().get(spreadsheetId=sheetid, range=range_).execute().get('values', [])
-
-    if not values:
-        raise ValueError('Sheet data not found')
-    else:
-        return values
-
-def get_creds(config: Dict, scopes: List[str]):
-    """Gets credentials based on the given config file and scopes.
-    
-    Saves the pickled creds to a file for later re-use.
-    """
-    creds = None
-    TOKEN  = config['SHEETS'].get('TOKEN')
-    CREDENTIALS = config['SHEETS'].get('CREDENTIALS')
-    if os.path.exists(TOKEN): 
-        with open(TOKEN, 'rb') as token:
-            creds = pickle.load(token)
-
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            if config['SHEETS'].get('IS_SERVICE_ACCOUNT'):
-                creds = service_account.Credentials.from_service_account_file(
-                    CREDENTIALS, scopes=scopes)
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    CREDENTIALS, scopes)
-                creds = flow.run_local_server(port=0)
-
-        # Save the credentials for the next run
-        with open(TOKEN, 'wb') as token:
-            pickle.dump(creds, token)
-    return creds
-     
-    
-def insert_values(sheetid: str, body: dict, config: configparser.ConfigParser, **kwargs) -> dict:
-    '''
-    Insert values into spreadsheet.
-    Args : 
-        sheetid (str) : spreadsheet id (from url).
-        body (dict): body as defined by Googlespreadhseet API. 
-        config (ConfigParser): configuration
-
-    Kwargs:
-        inputoption (str) : value input option, default='USER_ENTERED'
-    
-    Returns : 
-        response (dict) : response from upload (no values)
-
-    Example body:
-    body = {
-        'range': 'SheetName!A1:A3',
-        'majorDimension': 'ROWS',
-        'values': [[1], [2], [3]]
-    }
-
-    TODO: reconfigure as Sheet object method. 
-    '''
-    
-    SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-    
-    INPUTOPTION = kwargs['inputoption'] if 'inputoption' in kwargs.keys() else 'USER_ENTERED'
-    creds = get_creds(config, SCOPES)
-
-    # Call the Sheets API
-    service = build('sheets', 'v4', credentials=creds, cache_discovery=False)
-    sheet   = service.spreadsheets()
-    request = sheet.values().update(spreadsheetId=sheetid,
-                                    range=body['range'],
-                                    body=body, 
-                                    valueInputOption=INPUTOPTION)
-    response = request.execute()
-    return response
 
 def values2dataframe(values: list) -> pd.DataFrame:
     '''
@@ -282,39 +160,6 @@ def ErrorTest(data, columns, rgx, table):
         table = table.append(invalid, ignore_index=True, sort=False)
     return table
 
-def fix_cells(sheetid, sheetname, error_table, column_dict, config):
-    '''
-    Fix specific cells on the private sheet, based on error table. 
-    Error table also needs to provide the "fix" column which is what 
-    we are replacing the current value with. 
-    :column_dict: map from 'column_name' to A1 notation. 
-    '''
-    assert 'fix' in error_table.columns
-    assert 'value' in error_table.columns 
-    
-    fixed = 0
-    for _, error in error_table.iterrows():      
-        row       = error['row']
-        a1 = column_dict[error['column']] + row
-        range_    = '{}!{}'.format(sheetname, a1)
-        try:
-            fetch = read_values(sheetid, f'{sheetname}!A{row}', config) # fetch ID to ensure that it is the same.
-            assert error['ID'] == fetch[0][0]
-            body = {
-                'range': range_,
-                'majorDimension': 'ROWS',
-                'values': [[error['fix']]]
-            }
-            insert_values(sheetid, body, config)
-            fixed += 1
-            
-        except Exception as E:
-            print(error)
-            print(fetch)
-            raise E
-    return fixed
-
-
 def generate_error_tables(data):
     '''
     Generate table for fields that don't pass the rgex tests. 
@@ -370,78 +215,4 @@ def generate_error_tables(data):
     
     return [fixable, unfixable]
 
-def insert_ids(Sheet: GoogleSheet, config: configparser.ConfigParser) -> dict:
-    '''
-    Insert Id numbers for any row that does not have any. 
-    ID numbers are sequential, so we do MAX(current) + 1 for each new ID. 
-    '''
 
-    # Import columns to assert positions when updating
-    logging.info('insert_ids in sheet %s', Sheet.name)
-    id_col = alpha[Sheet.columns.index('ID')]
-    if 'country' in Sheet.columns:
-        country_col = alpha[Sheet.columns.index('country')]
-    else:
-        country_col = 'F'
-
-    # Import all IDs
-    id_range = f'{Sheet.name}!{id_col}:{id_col}'
-    IDS = read_values(Sheet.spreadsheetid, id_range, config)[1:]
-    
-    # Import country column for comparison
-    country_range = f'{Sheet.name}!{country_col}:{country_col}'
-    countries = read_values(Sheet.spreadsheetid, country_range, config)
-
-    diff = len(countries) - len(IDS)
-    #if diff <= 0:
-    #    return None
-
-    # Get numerical value of ids in order to get the max. 
-    # For old sheets : int(x)
-    # For new ones xxx-int(x)
-    ids = []
-    maxid = -9999
-    for I in IDS:
-        if len(I) == 1:
-            x = I[0]
-            if '-' in x:
-                num = x.split('-')[1]
-            else:
-                num = x
-            num = int(num)
-            ids.append(num)
-            if num > maxid :
-                maxid = num
-        else:
-            ids.append(None)
-
-    # Fill in null values
-    for i, num in enumerate(ids):
-        if num is None:
-            ids[i] = maxid + 1
-            maxid += 1
-
-    
-    # append new numbers for difference in ids and countries.
-    new_ids = []
-    while len(new_ids) < diff:
-        new_ids.append(maxid + 1)
-        maxid += 1
-    
-    new_ids = ids + new_ids
-
-    # insert new ids : 
-    if Sheet.name in ['Hubei', 'outside_Hubei']:
-        new_values = [[str(x)] for x in new_ids]
-    else:
-        new_values =[[f'{Sheet.ID}-{x}'] for x in new_ids]
-
-    start = len(IDS) + 1
-    end   = start + len(new_values)
-    new_range = f'{Sheet.name}!{id_col}2:{id_col}{end}'
-    body = {
-        'range': new_range,
-        'majorDimension': 'ROWS',
-        'values': new_values[:-1]
-    }
-    return insert_values(Sheet.spreadsheetid, body, config, inputoption='RAW')

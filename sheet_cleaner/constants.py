@@ -1,6 +1,3 @@
-alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'  # for a1 notation conversion
-
-
 date_columns = ['date_onset_symptoms', 'date_admission_hospital', 'date_confirmation',
                 'travel_history_dates', 'date_death_or_discharge']
 

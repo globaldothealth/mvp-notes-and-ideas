@@ -12,9 +12,8 @@ import time
 from datetime import datetime
 
 from geocoding import csv_geocoder
-# TODO: remove * imports and only import what's necessary.
-from constants import *
-from functions import *
+from functions import get_GoogleSheets, values2dataframe, get_trailing_spaces, get_NA_errors, generate_error_tables, 
+
 
 parser = argparse.ArgumentParser(
     description='Cleanup sheet and output generation script')
@@ -33,46 +32,42 @@ def main():
 
     sheets = get_GoogleSheets(config)
     for_github = []
+
     # Load geocoder early so that invalid tsv paths errors are caught early on.
     geocoder = csv_geocoder.CSVGeocoder(config['GEOCODING'].get('TSV_PATH'))
     for s in sheets:
         logging.info("Processing sheet %s", s.name)
-        insert_ids(s, config)
+        s.insert_ids()
         time.sleep(args.sleep_time_sec)
 
         ### Clean Private Sheet Entries. ###
         # note : private sheet gets updated on the fly and redownloaded to ensure continuity between fixes (granted its slower).
-        range_      = f'{s.name}!A:AG'
-        values      = read_values(s.spreadsheetid, range_, config)
-        columns     = s.columns
-        column_dict = {c:index2A1(i) for i,c in enumerate(columns)} # to get A1 notation, doing it now to ensure proper order
-        data        = values2dataframe(values)
+        
+        range = f'{s.name}!A:AG'
+        data = values2dataframe(s.read_values())
 
         # Trailing Spaces
         trailing = get_trailing_spaces(data)
         if len(trailing) > 0:
             logging.info('fixing %d trailing whitespace', len(trailing))
-            fix_cells(s.spreadsheetid, s.name, trailing, column_dict, config)
-            values = read_values(s.spreadsheetid, range_, config)
-            data   = values2dataframe(values)
+            s.fix_cells(trailing)
+            data = values2dataframe(s.read_values(range_))
             time.sleep(args.sleep_time_sec)
 
         # fix N/A => NA
         na_errors = get_NA_errors(data)
         if len(na_errors) > 0:
             logging.info('fixing %d N/A -> NA', len(na_errors))
-            fix_cells(s.spreadsheetid, s.name, na_errors, column_dict, config)
-            values = read_values(s.spreadsheetid, range_, config)
-            data   = values2dataframe(values)
+            s.fix_cells(na_errors)
+            data   = values2dataframe(s.read_values(range_))
             time.sleep(args.sleep_time_sec)
 
         # Regex fixes
         fixable, non_fixable = generate_error_tables(data)
         if len(fixable) > 0:
             logging.info('fixing %d regexps', len(fixable))
-            fix_cells(s.spreadsheetid, s.name, fixable, column_dict, config)
-            values = read_values(s.spreadsheetid, range_, config)
-            data   = values2dataframe(values)
+            fix_cells(fixable)
+            data = values2dataframe(self.read_values(range_))
             time.sleep(args.sleep_time_sec)
 
         
@@ -159,8 +154,6 @@ def main():
         script += f'cd {os.getcwd()}\n'
         print(script)
         os.system(script)
-
-
 
 if __name__ == '__main__':
     main()
