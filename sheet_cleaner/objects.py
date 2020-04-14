@@ -6,7 +6,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 import pickle
 import os
-
+import re
 
 class GoogleSheet(object):
     '''
@@ -95,16 +95,16 @@ class GoogleSheet(object):
 
     def get_columns(self):
         r = f'{self.name}!A1:AG1'
-        self.columns = self.read_values(r)[0]
-        for i, c in enumerate(self.columns):
+        columns = self.read_values(r)[0]
+        for i, c in enumerate(columns):
                 # 'country' column had disappeared
-                if c.strip() == '' and self.columns[i-1] == 'province':
-                    self.columns[i] = 'country'
+                if c.strip() == '' and columns[i-1] == 'province':
+                    columns[i] = 'country'
 
                 # some white space gets added unoticed sometimes 
-                self.columns[i] = c.strip()
-
-
+                columns[i] = c.strip()
+        return columns
+        
     def fix_cells(self, error_table):
         ''' 
         Fix specific cells on the private sheet, based on error table. 
@@ -220,3 +220,54 @@ class GoogleSheet(object):
             return 'B{}'.format(alpha[num%26])
         else:
             raise ValueError('Could not convert index "{}" to A1 notation'.format(num))
+
+
+    def new_sheet(self, config, config_file_name):
+        '''
+        Make new spreadsheet as copy of itself (columns, no data). 
+        + Add new sheet info to config file
+        '''
+
+        service = build('sheets', 'v4', credentials=self.Auth())
+        request = service.spreadsheets().get(spreadsheetId=self.spreadsheetid, fields='properties.title')
+        response = request.execute()
+        title = response['properties']['title']
+        spreadsheet = {
+            'properties': {'title': title},
+            'sheets': {
+                'properties': {
+                    'sheetId': 0, 
+                    'title': self.name
+                },
+                'data': { 
+                    'startRow' : 0,
+                    'startColumn' : 0,
+                    'rowData': {
+                        'values': [{'userEnteredValue': {'stringValue': c}} for c in self.columns]
+                    }
+                }
+            }
+        }
+        spreadsheet = service.spreadsheets().create(body=spreadsheet,
+                                    fields='spreadsheetId,sheets').execute()
+
+        # Add columns : 
+        # Get greatest number in config file [SHEETX]:
+        sections = [s for s in config.sections() if s not in ['SHEET0', 'SHEET1'] and re.match(r'^SHEET\d*$', s)] # skip hubei, outside 
+        sheet_numbers = [int(re.search('SHEET(\d*)', s).group(1)) for s in sections] 
+        sheet_IDs = [int(config[s]['ID']) for s in sections]
+        SHEET = 'SHEET' + str(max(sheet_numbers) + 1)
+        new_ID  = str(max(sheet_IDs) + 1).zfill(3)
+    
+        config.add_section(SHEET)
+        config[SHEET]['NAME'] = self.name
+        config[SHEET]['SID'] = spreadsheet['spreadsheetId']
+        config[SHEET]['ID'] = new_ID
+        with open(config_file_name, 'w') as F:
+            config.write(F)
+            
+        New = GoogleSheet(spreadsheet['spreadsheetId'], self.name, new_ID, self.token, self.credentials)     
+        New.columns = self.columns.copy()
+
+
+        return New

@@ -27,8 +27,10 @@ parser.add_argument('-p', '--push_to_git', default=False, const=True, action="st
 def main():
     args = parser.parse_args()
     config = configparser.ConfigParser()
-    config.read(args.config_file)
+    config.optionxform=str # to preserve case
+    config.read(args.config_file) 
     logging.basicConfig(filename='cleanup.log', level=logging.INFO)
+    
 
     sheets = get_GoogleSheets(config)
     for_github = []
