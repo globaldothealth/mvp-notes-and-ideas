@@ -302,22 +302,13 @@ class Template(GoogleSheet):
         request = service.files().copy(fileId=self.spreadsheetid, body=copied_file)
         create_response = request.execute()
         
-        # {'kind': 'drive#file', 
-        #  'id': '1tvcFK22waQCl-uXCb_ZVTBOo94ePpknYcWXvXCM727I', 
-        #  'name': 'Copy of Open COVID-19 Sheet Template', 
-        #  'mimeType': 'application/vnd.google-apps.spreadsheet'}
 
- 
         permissions = {
             "type": "group", 
             "role": "writer",
             "emailAddress": emailto 
         }
-#        permissions = {
-#                "type": 'group',
-#                "role": 'writer',
-#                "emailAddress": "covid19_spreadsheets@googlegroups.com"
-#        }
+
         request = service.permissions().create(
             fileId=create_response['id'],
             body=permissions,
