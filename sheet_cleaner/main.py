@@ -14,7 +14,7 @@ from datetime import datetime
 import pandas as pd
 
 from geocoding import csv_geocoder
-from functions import get_GoogleSheets, values2dataframe, get_trailing_spaces, get_NA_errors, generate_error_tables 
+from functions import get_GoogleSheets, values2dataframe, get_trailing_spaces, get_NA_errors, generate_error_tables, duplicate_rows_per_column
 
 
 parser = argparse.ArgumentParser(
@@ -48,8 +48,17 @@ def main():
         range_ = f'{s.name}!A:AG'
         data = values2dataframe(s.read_values(range_))
 
-        # Trailing Spaces
-        trailing = get_trailing_spaces(data)
+         # Expand aggregated cases into one row each.
+        logging.info("Rows before expansion: %d", len(data))
+        data.aggregated_num_cases = pd.to_numeric(data.aggregated_num_cases, errors='coerce')
+        data = duplicate_rows_per_column(data, "aggregated_num_cases")
+        logging.info("Rows after expansion: %d", len(data))
+
+        # Generate IDs for each row sequentially following the sheet_id-inc_int pattern.
+        data['ID'] = s.ID + "-" + pd.Series(range(1, len(data)+1)).astype(str)
+
+        # Trailing Spaces, select columns that are object/str only.
+        trailing = get_trailing_spaces(data.select_dtypes("object"))
         if len(trailing) > 0:
             logging.info('fixing %d trailing whitespace', len(trailing))
             s.fix_cells(trailing)
@@ -57,7 +66,7 @@ def main():
             time.sleep(args.sleep_time_sec)
 
         # fix N/A => NA
-        na_errors = get_NA_errors(data)
+        na_errors = get_NA_errors(data.select_dtypes("object"))
         if len(na_errors) > 0:
             logging.info('fixing %d N/A -> NA', len(na_errors))
             s.fix_cells(na_errors)
@@ -71,8 +80,8 @@ def main():
             s.fix_cells(fixable)
             data = values2dataframe(s.read_values(range_))
             time.sleep(args.sleep_time_sec)
-
         
+        # ~ negates, here clean = data with IDs not in non_fixable IDs.
         clean = data[~data.ID.isin(non_fixable.ID)]
         clean = clean.drop('row', axis=1)
         clean.sort_values(by='ID')
@@ -88,15 +97,11 @@ def main():
         error_file  = os.path.join(directory, file_name)
         non_fixable.to_csv(error_file, index=False, header=True)
         for_github.append(error_file)
-
         
     # Combine data from all sheets into a single datafile
-    # + generate IDs
     all_data = []
     for s in sheets:
-        data = s.data
-        data['ID'] = s.ID + "-" + pd.Series(range(1, len(data)+1)).astype(str)
-        all_data.append(data)
+        all_data.append(s.data)
     
     all_data = pd.concat(all_data, ignore_index=True)
     all_data = all_data.sort_values(by='ID')
