@@ -14,7 +14,7 @@ from datetime import datetime
 import pandas as pd
 
 from geocoding import csv_geocoder
-from functions import get_GoogleSheets, values2dataframe, get_trailing_spaces, get_NA_errors, generate_error_tables, duplicate_rows_per_column
+from functions import get_GoogleSheets, values2dataframe, get_NA_errors, generate_error_tables, duplicate_rows_per_column, trim_df
 
 
 parser = argparse.ArgumentParser(
@@ -31,7 +31,7 @@ def main():
     config = configparser.ConfigParser()
     config.optionxform=str # to preserve case
     config.read(args.config_file) 
-    logging.basicConfig(filename='cleanup.log', level=logging.INFO)
+    logging.basicConfig(filename='cleanup.log', filemode="w", level=logging.INFO)
     
 
     sheets = get_GoogleSheets(config)
@@ -57,16 +57,11 @@ def main():
         # Generate IDs for each row sequentially following the sheet_id-inc_int pattern.
         data['ID'] = s.ID + "-" + pd.Series(range(1, len(data)+1)).astype(str)
 
-        # Trailing Spaces, select columns that are object/str only.
-        trailing = get_trailing_spaces(data.select_dtypes("object"))
-        if len(trailing) > 0:
-            logging.info('fixing %d trailing whitespace', len(trailing))
-            s.fix_cells(trailing)
-            data = values2dataframe(s.read_values(range_))
-            time.sleep(args.sleep_time_sec)
+        # Remove whitespace.
+        data = trim_df(data)
 
         # fix N/A => NA
-        na_errors = get_NA_errors(data.select_dtypes("object"))
+        na_errors = get_NA_errors(data.select_dtypes("string"))
         if len(na_errors) > 0:
             logging.info('fixing %d N/A -> NA', len(na_errors))
             s.fix_cells(na_errors)
@@ -87,7 +82,6 @@ def main():
         clean.sort_values(by='ID')
         s.data = clean
         non_fixable = non_fixable.sort_values(by='ID')
-        
 
         # Save error_reports
         # These are separated by Sheet.
@@ -101,10 +95,12 @@ def main():
     # Combine data from all sheets into a single datafile
     all_data = []
     for s in sheets:
+        logging.info("sheet %s had %d rows", s.name, len(s.data))
         all_data.append(s.data)
     
     all_data = pd.concat(all_data, ignore_index=True)
     all_data = all_data.sort_values(by='ID')
+    logging.info("all_data has %d rows", len(all_data))
 
     # Fill geo columns.
     geocode_matched = 0
@@ -127,10 +123,6 @@ def main():
     # used to have those geolocation within the spreadsheet.
     # This is to avoid breaking latestdata.csv consumers.
     all_data = all_data[["ID","age","sex","city","province","country","latitude","longitude","geo_resolution","date_onset_symptoms","date_admission_hospital","date_confirmation","symptoms","lives_in_Wuhan","travel_history_dates","travel_history_location","reported_market_exposure","additional_information","chronic_disease_binary","chronic_disease","source","sequence_available","outcome","date_death_or_discharge","notes_for_discussion","location","admin3","admin2","admin1","country_new","admin_id","data_moderator_initials","travel_history_binary"]]
-    
-    #drop_invalid_ids = []
-    #for i, row in all_data.iterrows():
-    #    if row['ID'].str.match('
 
     # save
     logging.info("Saving files to disk")
