@@ -1,5 +1,15 @@
 [DEFAULT]
 
+[FILES]
+# WheRe to save data (and log)
+LOG = /path/to/file.log
+DATA = /path/to/covid-19.data.TIMESTAMP.csv
+ERRORS = /path/to/error_reports/
+LATEST = /path/to/latest_data/
+
+[GIT]
+REPO = /path/to/gitrepo/
+
 [GEOCODING]
 TSV_PATH = geocoding/geo_admin.tsv
 
@@ -10,12 +20,12 @@ TOKEN = /path/to/credentials_token.pickle
 [SHEET0]
 NAME = outside_Hubei
 SID = 1kNKj5FxvAfRBVgikTzNq0EXyggI62_97_8rEo3IjwOk
-ID = 000
+ID = 000-1
 
 [SHEET1]
 NAME = Hubei
 SID = 1kNKj5FxvAfRBVgikTzNq0EXyggI62_97_8rEo3IjwOk
-ID = 000
+ID = 000-2
 
 [SHEET2]
 NAME = Africa_COVID19_line_list
@@ -40,7 +50,6 @@ ID = 004
 [SHEET6]
 NAME = North_America_COVID19_line_list
 SID = 1gvYnjXkyhI_8FEJ5IpSiPr4cvCxQzw5w6J8uEti7UH4
-#SID = 1VJtwiuh3V4llz-Ay64HY8TICyGvN1Adqrux_w1EoW70
 ID = 005
 
 [SHEET7]
@@ -48,14 +57,7 @@ NAME = North_America_COVID19_line_list
 SID = 1FDMXRoz6hmJLY-NTzoiQ-B0_ANcB3MTBretnm6U389A
 ID = 006
 
-
-[FILES]
-# WheRe to save data (and log)
-LOG = /path/to/file.log
-DATA = /path/to/covid-19.data.TIMESTAMP.csv  
-ERRORS = /path/to/error_reports/
-LATEST = /path/to/latest_data/
-
-
-[GIT]
-REPO = /home/tbrewer/nCoV2019/
+[SHEET8]
+NAME = Europe_COVID19_line_list-2
+SID = 1PKf3P54Uf66_WxXUJ24TcYcm6e0ZT2a4t-1VPuFJjpE
+ID = 007
