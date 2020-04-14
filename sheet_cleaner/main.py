@@ -12,7 +12,7 @@ import time
 from datetime import datetime
 
 from geocoding import csv_geocoder
-from functions import get_GoogleSheets, values2dataframe, get_trailing_spaces, get_NA_errors, generate_error_tables, 
+from functions import get_GoogleSheets, values2dataframe, get_trailing_spaces, get_NA_errors, generate_error_tables 
 
 
 parser = argparse.ArgumentParser(
