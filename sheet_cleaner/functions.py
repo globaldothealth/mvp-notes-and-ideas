@@ -65,7 +65,6 @@ def values2dataframe(values: list) -> pd.DataFrame:
     '''
     columns = values[0] 
     for i, c in enumerate(columns):
-
         # added when column name disappeared.
         if c.strip() == '' and columns[i-1] == 'province':
             columns[i] = 'country'
@@ -77,6 +76,7 @@ def values2dataframe(values: list) -> pd.DataFrame:
             extension = ['']*(ncols-len(d))
             d.extend(extension)
     data    = pd.DataFrame(data=data, columns=columns)
+    data.convert_dtypes()
     data['row'] = list(range(2, len(data)+2)) # keeping row number (+1 for 1 indexing +1 for column headers in sheet)
     data['row'] = data['row'].astype(str)
         
@@ -102,35 +102,6 @@ def index2A1(num: int) -> str:
         return 'B{}'.format(ascii_uppercase[num%26])
     else:
         raise ValueError('Could not convert index "{}" to A1 notation'.format(num))
-        
-def get_trailing_spaces(data: pd.DataFrame) -> pd.DataFrame:
-    '''
-    Generate error table for trailing whitespaces (front and back).
-    Args : 
-        data (pd.DataFrame)
-    Returns :
-        error_table (pd.DataFrame) : table listing cells with errors.
-    '''
-    df = data.copy()
-    
-    error_table = pd.DataFrame(columns=['row', 'column', 'value', 'fix'])
-    for c in df.columns:
-        if c == 'row':
-            continue
-        else:
-            try:
-                stripped = df[c].str.strip()
-            except AttributeError as ae:
-                print("column:", c)
-                raise ae
-            invalid_bool = stripped != df[c]
-            invalid      = df[invalid_bool][['row', 'ID']].copy()
-            invalid['column'] = c
-            invalid['value'] = df[c][invalid_bool].copy()
-            invalid['fix'] = stripped[invalid_bool]
-        error_table = error_table.append(invalid, ignore_index=True, sort=True)        
-    return error_table
-
 
 def get_NA_errors(data: pd.DataFrame) -> pd.DataFrame:
     '''
@@ -235,4 +206,10 @@ def duplicate_rows_per_column(df: pd.DataFrame, col: str) -> pd.DataFrame:
         row[col] = np.nan
         df.at[i, 'aggr'] = np.nan
         df = df.append([row] * num, ignore_index=True)
+    return df
+
+def trim_df(df: pd.DataFrame) -> pd.DataFrame:
+    """Trims whitespace from all columns/rows in the dataframe."""
+    for col in df.convert_dtypes().select_dtypes("string"):
+        df[col] = df[col].str.strip()
     return df
