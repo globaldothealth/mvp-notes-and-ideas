@@ -14,7 +14,7 @@ from datetime import datetime
 import pandas as pd
 
 from geocoding import csv_geocoder
-from functions import get_GoogleSheets, values2dataframe, get_NA_errors, generate_error_tables, duplicate_rows_per_column, trim_df
+from functions import get_GoogleSheets, values2dataframe, generate_error_tables, duplicate_rows_per_column, trim_df, fix_sex, fix_na
 
 
 parser = argparse.ArgumentParser(
@@ -60,13 +60,13 @@ def main():
         # Remove whitespace.
         data = trim_df(data)
 
+        # Fix columns that can be fixed easily.
+        data.sex = fix_sex(data.sex)
+
         # fix N/A => NA
-        na_errors = get_NA_errors(data.select_dtypes("string"))
-        if len(na_errors) > 0:
-            logging.info('fixing %d N/A -> NA', len(na_errors))
-            s.fix_cells(na_errors)
-            data   = values2dataframe(s.read_values(range_))
-            time.sleep(args.sleep_time_sec)
+        # TODO: This should be strings.
+        for col in data.select_dtypes("object"):
+            data[col] = fix_na(data[col])
 
         # Regex fixes
         fixable, non_fixable = generate_error_tables(data)
