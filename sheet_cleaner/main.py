@@ -95,7 +95,7 @@ def main():
     all_data = []
     for s in sheets:
         data = s.data
-        data['ID'] = s.ID + pd.Series(range(1, len(data)+1)).astype(str)
+        data['ID'] = s.ID + "-" + pd.Series(range(1, len(data)+1)).astype(str)
         all_data.append(data)
     
     all_data = pd.concat(all_data, ignore_index=True)
