@@ -6,6 +6,7 @@ import os
 import pickle
 import logging
 import re
+from string import ascii_uppercase 
 
 from typing import Dict, List
 
@@ -40,7 +41,8 @@ def get_GoogleSheets(config: configparser.ConfigParser) -> list:
             name = config[s]['NAME']
             googlesheet = GoogleSheet(sid, name, id_, 
                     config['SHEETS'].get("TOKEN"),
-                    config['SHEETS'].get('CREDENTIALS'))
+                    config['SHEETS'].get('CREDENTIALS'),
+                    config['SHEETS'].get('IS_SERVICE_ACCOUNT'))
 
             sheets.append(googlesheet)
     return sheets
@@ -91,11 +93,11 @@ def index2A1(num: int) -> str:
     TODO: expand this for any number of columns (recursive function?)
     '''
     if 0 <= num <= 25:
-        return alpha[num]
+        return ascii_uppercase[num]
     elif 26 <= num <= 51:
-        return 'A{}'.format(alpha[num%26])
+        return 'A{}'.format(ascii_uppercase[num%26])
     elif 52 <= num <= 77:
-        return 'B{}'.format(alpha[num%26])
+        return 'B{}'.format(ascii_uppercase[num%26])
     else:
         raise ValueError('Could not convert index "{}" to A1 notation'.format(num))
         
