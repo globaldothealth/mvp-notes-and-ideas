@@ -6,11 +6,13 @@ import os
 import pickle
 import logging
 import re
+import math
 from string import ascii_uppercase 
 
 from typing import Dict, List
 
 import pandas as pd
+import numpy as np 
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
@@ -111,12 +113,16 @@ def get_trailing_spaces(data: pd.DataFrame) -> pd.DataFrame:
     '''
     df = data.copy()
     
-    error_table = pd.DataFrame(columns=['row', 'ID', 'column', 'value', 'fix'])
+    error_table = pd.DataFrame(columns=['row', 'column', 'value', 'fix'])
     for c in df.columns:
         if c == 'row':
             continue
         else:
-            stripped = df[c].str.strip()
+            try:
+                stripped = df[c].str.strip()
+            except AttributeError as ae:
+                print("column:", c)
+                raise ae
             invalid_bool = stripped != df[c]
             invalid      = df[invalid_bool][['row', 'ID']].copy()
             invalid['column'] = c
@@ -218,3 +224,15 @@ def generate_error_tables(data):
     return [fixable, unfixable]
 
 
+
+def duplicate_rows_per_column(df: pd.DataFrame, col: str) -> pd.DataFrame:
+    """Duplicate rows based on the integer number in 'col' if > 0.
+    Changes the data frame in place, returned col will only contain nan."""
+    for i, row in df.iterrows():
+        if math.isnan(row[col]) or row[col] <= 0:
+            continue
+        num = int(row[col])
+        row[col] = np.nan
+        df.at[i, 'aggr'] = np.nan
+        df = df.append([row] * num, ignore_index=True)
+    return df
