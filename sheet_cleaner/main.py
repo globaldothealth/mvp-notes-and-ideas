@@ -37,8 +37,6 @@ def main():
     geocoder = csv_geocoder.CSVGeocoder(config['GEOCODING'].get('TSV_PATH'))
     for s in sheets:
         logging.info("Processing sheet %s", s.name)
-        s.insert_ids()
-        time.sleep(args.sleep_time_sec)
 
         ### Clean Private Sheet Entries. ###
         # note : private sheet gets updated on the fly and redownloaded to ensure continuity between fixes (granted its slower).
@@ -88,17 +86,12 @@ def main():
         for_github.append(error_file)
 
         
-    # Combine data from all sheets into a single datafile:
+    # Combine data from all sheets into a single datafile
+    # + generate IDs
     all_data = []
     for s in sheets:
         data = s.data
-        
-        if s.name == 'outside_Hubei':
-            data['ID'] = data['ID'].apply(lambda x : f'000-1-{x}')
-        
-        elif s.name  == 'Hubei':
-            data['ID'] = data['ID'].apply(lambda x: f'000-2-{x}')
-
+        data['ID'] = s.ID + pd.Series(range(1, len(data)+1)).astype(str)
         all_data.append(data)
     
     all_data = pd.concat(all_data, ignore_index=True)
