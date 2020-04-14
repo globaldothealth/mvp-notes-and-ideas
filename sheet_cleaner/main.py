@@ -49,10 +49,10 @@ def main():
         data = values2dataframe(s.read_values(range_))
 
          # Expand aggregated cases into one row each.
-        print("Length before expansion", len(data))
+        logging.info("Rows before expansion: %d", len(data))
         data.aggregated_num_cases = pd.to_numeric(data.aggregated_num_cases, errors='coerce')
         data = duplicate_rows_per_column(data, "aggregated_num_cases")
-        print("Length after expansion", len(data))
+        logging.info("Rows after expansion: %d", len(data))
 
         # Generate IDs for each row sequentially following the sheet_id-inc_int pattern.
         data['ID'] = s.ID + "-" + pd.Series(range(1, len(data)+1)).astype(str)
