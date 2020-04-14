@@ -39,7 +39,7 @@ class CSVGeocoder:
         # lookups.
         
         self.geocodes :Dict[str, Geocode] = {}
-        with open(init_csv_path, newline="") as csvfile:
+        with open(init_csv_path, newline="", encoding='utf-8') as csvfile:
             # Delimiter is \t instead of , because google spreadsheets were
             # exporting lat,lng with commas, leading to an invalid number of
             # columns per row :(
