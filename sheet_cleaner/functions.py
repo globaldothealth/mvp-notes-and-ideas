@@ -76,7 +76,7 @@ def values2dataframe(values: list) -> pd.DataFrame:
             extension = ['']*(ncols-len(d))
             d.extend(extension)
     data    = pd.DataFrame(data=data, columns=columns)
-    data.convert_dtypes()
+    data = data.convert_dtypes()
     data['row'] = list(range(2, len(data)+2)) # keeping row number (+1 for 1 indexing +1 for column headers in sheet)
     data['row'] = data['row'].astype(str)
         
@@ -213,3 +213,28 @@ def trim_df(df: pd.DataFrame) -> pd.DataFrame:
     for col in df.convert_dtypes().select_dtypes("string"):
         df[col] = df[col].str.strip()
     return df
+
+def _fix_sex(val: str) -> str:
+    low_val = val.lower()
+    if low_val == "m":
+        return "male"
+    elif low_val == "f":
+        return "female"
+    elif low_val == "female" or low_val == "male":
+        return low_val
+    return val
+
+def fix_sex(sex_col: pd.Series) -> pd.Series:
+    """Fixes various ways of spelling male/female."""
+    return sex_col.map(_fix_sex)
+
+def _fix_na(val: str) -> str:
+    up_val = val.upper()
+    if up_val == "N/A":
+        return "NA"
+    elif up_val == "NA":
+        return "NA"
+    return val
+
+def fix_na(col: pd.Series) -> pd.Series:
+    return col.map(_fix_na)
