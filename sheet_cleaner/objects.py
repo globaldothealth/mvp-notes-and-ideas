@@ -4,6 +4,7 @@ GoogleSheet Object
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+from google.oauth2 import service_account
 import pickle
 import os
 import re
@@ -17,12 +18,13 @@ class GoogleSheet(object):
     :ID: -> str, code for ID column in sheets (specific to region).
     '''
 
-    def __init__(self, spreadsheetid, name, reference_id, token, credentials):
+    def __init__(self, spreadsheetid, name, reference_id, token, credentials, is_service_account):
         self.spreadsheetid = spreadsheetid 
         self.name = name
         self.ID = reference_id
         self.token = token
         self.credentials = credentials
+        self.is_service_account = is_service_account
         self.columns = self.get_columns()
         self.column_dict = {c:self.index2A1(i) for i,c in enumerate(self.columns)}
 
@@ -49,9 +51,13 @@ class GoogleSheet(object):
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
             else:
-                flow = InstalledAppFlow.from_client_secrets_file(
-                             CREDENTIALS, SCOPES)
-                creds = flow.run_local_server(port=0)
+                if self.is_service_account:
+                    creds = service_account.Credentials.from_service_account_file(
+                        CREDENTIALS, scopes=SCOPES)
+                else:
+                    flow = InstalledAppFlow.from_client_secrets_file(
+                        CREDENTIALS, SCOPES)
+                    creds = flow.run_local_server(port=0)
 
             with open(TOKEN, 'wb') as token:
                 pickle.dump(creds, token)
@@ -70,7 +76,7 @@ class GoogleSheet(object):
 
     	'''
     
-        service = build('sheets', 'v4', credentials=self.Auth())
+        service = build('sheets', 'v4', credentials=self.Auth(), cache_discovery=False)
         sheet = service.spreadsheets()
         values  = sheet.values().get(spreadsheetId=self.spreadsheetid, range=range_).execute().get('values', [])	
         if not values:
@@ -78,7 +84,7 @@ class GoogleSheet(object):
         else:
           return values
 
-    def insert_values(body, **kwargs):
+    def insert_values(self, body, **kwargs):
 
         inputoption = kwargs.get('inputoption', 'USER_ENTERED')
 
@@ -116,12 +122,12 @@ class GoogleSheet(object):
         assert 'value' in error_table.columns 
            
         fixed = 0 
-        for i,error in error_table.iterrows():    
+        for _, error in error_table.iterrows():    
             row       = error['row']
             a1 = self.column_dict[error['column']] + row 
-            range_    = '{}!{}'.format(self.sheetname, a1) 
+            range_    = '{}!{}'.format(self.name, a1) 
             
-            fetch = self.read_values(f'{sheetname}!A{row}') # fetch ID to ensure that it is the same.
+            fetch = self.read_values(f'{self.name}!A{row}') # fetch ID to ensure that it is the same.
             assert error['ID'] == fetch[0][0]
             body = { 
                 'range': range_,
@@ -149,7 +155,7 @@ class GoogleSheet(object):
         id_range = f'{self.name}!{id_col}:{id_col}'
         IDS = self.read_values(id_range)[1:]
     
-        country_range = f'{Sheet.name}!{country_col}:{country_col}'
+        country_range = f'{self.name}!{country_col}:{country_col}'
         countries = self.read_values(country_range)
     
         diff = len(countries) - len(IDS)
@@ -228,7 +234,7 @@ class GoogleSheet(object):
         + Add new sheet info to config file
         '''
 
-        service = build('sheets', 'v4', credentials=self.Auth())
+        service = build('sheets', 'v4', credentials=self.Auth(), cache_discovery=False)
         request = service.spreadsheets().get(spreadsheetId=self.spreadsheetid, fields='properties.title')
         response = request.execute()
         title = response['properties']['title']
@@ -254,7 +260,7 @@ class GoogleSheet(object):
         # Add columns : 
         # Get greatest number in config file [SHEETX]:
         sections = [s for s in config.sections() if s not in ['SHEET0', 'SHEET1'] and re.match(r'^SHEET\d*$', s)] # skip hubei, outside 
-        sheet_numbers = [int(re.search('SHEET(\d*)', s).group(1)) for s in sections] 
+        sheet_numbers = [int(re.search(r'SHEET(\d*)', s).group(1)) for s in sections] 
         sheet_IDs = [int(config[s]['ID']) for s in sections]
         SHEET = 'SHEET' + str(max(sheet_numbers) + 1)
         new_ID  = str(max(sheet_IDs) + 1).zfill(3)
@@ -266,8 +272,6 @@ class GoogleSheet(object):
         with open(config_file_name, 'w') as F:
             config.write(F)
             
-        New = GoogleSheet(spreadsheet['spreadsheetId'], self.name, new_ID, self.token, self.credentials)     
-        New.columns = self.columns.copy()
-
-
-        return New
+        new_sheet = GoogleSheet(spreadsheet['spreadsheetId'], self.name, new_ID, self.token, self.credentials, self.is_service_account)     
+        new_sheet.columns = self.columns.copy()
+        return new_sheet

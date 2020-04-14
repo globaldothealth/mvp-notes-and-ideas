@@ -11,6 +11,8 @@ import shutil
 import time
 from datetime import datetime
 
+import pandas as pd
+
 from geocoding import csv_geocoder
 from functions import get_GoogleSheets, values2dataframe, get_trailing_spaces, get_NA_errors, generate_error_tables 
 
@@ -43,8 +45,8 @@ def main():
         ### Clean Private Sheet Entries. ###
         # note : private sheet gets updated on the fly and redownloaded to ensure continuity between fixes (granted its slower).
         
-        range = f'{s.name}!A:AG'
-        data = values2dataframe(s.read_values())
+        range_ = f'{s.name}!A:AG'
+        data = values2dataframe(s.read_values(range_))
 
         # Trailing Spaces
         trailing = get_trailing_spaces(data)
@@ -66,8 +68,8 @@ def main():
         fixable, non_fixable = generate_error_tables(data)
         if len(fixable) > 0:
             logging.info('fixing %d regexps', len(fixable))
-            fix_cells(fixable)
-            data = values2dataframe(self.read_values(range_))
+            s.fix_cells(fixable)
+            data = values2dataframe(s.read_values(range_))
             time.sleep(args.sleep_time_sec)
 
         
@@ -149,6 +151,7 @@ def main():
         script += f'cd {os.getcwd()}\n'
         print(script)
         os.system(script)
+
 
 if __name__ == '__main__':
     main()
