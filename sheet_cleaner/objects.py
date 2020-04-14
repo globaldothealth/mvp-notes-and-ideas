@@ -38,7 +38,9 @@ class GoogleSheet(object):
           scopes (str) scopes associated to credentials.
         '''
 
-        SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+        SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 
+                  'https://www.googleapis.com/auth/drive']
+        
         TOKEN  = self.token 
         CREDENTIALS = self.credentials 
 
@@ -257,8 +259,6 @@ class GoogleSheet(object):
         spreadsheet = service.spreadsheets().create(body=spreadsheet,
                                     fields='spreadsheetId,sheets').execute()
 
-        # Add columns : 
-        # Get greatest number in config file [SHEETX]:
         sections = [s for s in config.sections() if s not in ['SHEET0', 'SHEET1'] and re.match(r'^SHEET\d*$', s)] # skip hubei, outside 
         sheet_numbers = [int(re.search(r'SHEET(\d*)', s).group(1)) for s in sections] 
         sheet_IDs = [int(config[s]['ID']) for s in sections]
@@ -275,3 +275,79 @@ class GoogleSheet(object):
         new_sheet = GoogleSheet(spreadsheet['spreadsheetId'], self.name, new_ID, self.token, self.credentials, self.is_service_account)     
         new_sheet.columns = self.columns.copy()
         return new_sheet
+
+
+class Template(GoogleSheet):
+    def __init__(self, spreadsheetid, token, credentials, is_service_account): 
+        self.spreadsheetid = spreadsheetid
+        self.token = token
+        self.credentials = credentials
+        self.is_service_account = is_service_account
+
+
+    def copy(self, copy_title, emailto):
+        from apiclient import errors
+        """Copy an existing file.
+
+        Args:
+            service: Drive API service instance.
+            origin_file_id: ID of the origin file to copy.
+            copy_title: Title of the copy.
+
+        Returns:
+        The copied file if successful, None otherwise.
+         """
+        service =  build('drive', 'v3', credentials=self.Auth(), cache_discovery=False)
+        copied_file = {'name': copy_title, 'title': copy_title, 'writersCanShare': True}
+        request = service.files().copy(fileId=self.spreadsheetid, body=copied_file)
+        create_response = request.execute()
+        
+        # {'kind': 'drive#file', 
+        #  'id': '1tvcFK22waQCl-uXCb_ZVTBOo94ePpknYcWXvXCM727I', 
+        #  'name': 'Copy of Open COVID-19 Sheet Template', 
+        #  'mimeType': 'application/vnd.google-apps.spreadsheet'}
+
+ 
+        permissions = {
+            "type": "group", 
+            "role": "writer",
+            "emailAddress": emailto 
+        }
+#        permissions = {
+#                "type": 'group',
+#                "role": 'writer',
+#                "emailAddress": "covid19_spreadsheets@googlegroups.com"
+#        }
+        request = service.permissions().create(
+            fileId=create_response['id'],
+            body=permissions,
+            fields='id' 
+        )
+        permissions_response = request.execute()
+        name_response = self.rename_sheet(create_response['id'],
+                            copy_title)
+
+        return {'create': create_response, 
+                'permissions': permissions_response,
+                'name' : name_response}
+
+    def rename_sheet(self, spreadsheetId, new_name, sheet_id=0):
+        
+        body = {
+            'requests': [
+                {
+                    'updateSheetProperties': {
+                        "properties": {
+                            "sheetId": sheet_id,
+                            "title": new_name
+                        },
+                        "fields": "title"
+                    }
+                }
+            ]
+        }
+
+        service = build('sheets', 'v4', credentials=self.Auth(),
+                        cache_discovery=False).spreadsheets()
+        request = service.batchUpdate(spreadsheetId=spreadsheetId, body=body)
+        return request.execute()

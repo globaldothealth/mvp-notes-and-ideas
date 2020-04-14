@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+
+import argparse
+import logging
+import configparser
+from objects import Template
+import re
+
+parser = argparse.ArgumentParser(
+    description='Create new sheet from template')
+parser.add_argument('-c', '--config_file', type=str, default="CONFIG",
+                    help='Path to the config file')
+parser.add_argument('-n', '--name', type=str, default='COVID-19 Open Line List',
+                    help='name of new spreadsheet')
+
+args = parser.parse_args()
+config = configparser.ConfigParser()
+config.optionxform=str # preserve case
+config.read(args.config_file)
+
+def main():
+
+    token = config['SHEETS'].get('TOKEN')
+    credentials = config['SHEETS'].get('CREDENTIALS')
+    temp_sid = config['TEMPLATE'].get('SID')
+    is_service_account = True
+    email = config['TEMPLATE'].get('EMAILTO')
+
+    # Create new sheet
+    TEMPLATE = Template(temp_sid, token, credentials, is_service_account)
+    response = TEMPLATE.copy(args.name, email)
+    
+    # Update Config file 
+    new_sheet_id = response['create']['id']
+    sheet_sections = []
+    for s in config.sections():
+        if s not in ['SHEET0', 'SHEET1'] and re.match(r'^SHEET\d*$', s):
+            sheet_sections.append(s)
+    
+    max_num = max([int(re.search(r'SHEET(\d*)', s).group(1)) for s in sheet_sections])
+    max_id  = max([int(config[s]['ID']) for s in sheet_sections])
+    sheet_str = 'SHEET' + str(max_num + 1)
+    new_id    = (str(max_id + 1)).zfill(3)
+    
+    config.add_section(sheet_str)
+    config[sheet_str]['NAME'] = args.name 
+    config[sheet_str]['SID'] = response['create']['id']
+    config[sheet_str]['ID'] = new_id
+    with open(args.config_file, 'w') as F:
+        config.write(F)
+
+if __name__ == '__main__':
+    main()
