@@ -87,7 +87,8 @@ def values2dataframe(values: list) -> pd.DataFrame:
         "date_admission_hospital": "string",
         "date_confirmation": "string",
         "symptoms": "string",
-        "lives_in_Wuhan": "bool",
+        # Should be bool but lot of info is on business trips to Wuhan etc, better kept as a string.
+        "lives_in_Wuhan": "string",
         "travel_history_dates": "string",
         "travel_history_location": "string",
         "additional_information": "string",
@@ -208,12 +209,7 @@ def generate_error_tables(data):
         row = r.copy()
         fix = False
         col = row['column']
-        if col == 'sex':
-            test = row['value'].lower().strip() in ['male', 'female', '']
-            if test:
-                fix = row['value'].lower().strip()
-
-        elif col == 'age':
+        if col == 'age':
             test = bool(re.match(rgx_age, row['value'].replace(' ', '')))
             if test:
                 fix = row['value'].replace(' ', '')
