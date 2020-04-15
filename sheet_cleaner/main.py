@@ -118,6 +118,7 @@ def main():
         all_data.at[i, 'admin_id'] = geocode.admin_id
         all_data.at[i, 'country_new'] = geocode.country_new
     logging.info("Geocode matched %d/%d", geocode_matched, len(all_data))
+    logging.info("Top 10 geocode misses: %s",geocoder.misses.most_common(10))
     # Reorganize csv columns so that they are in the same order as when we
     # used to have those geolocation within the spreadsheet.
     # This is to avoid breaking latestdata.csv consumers.
