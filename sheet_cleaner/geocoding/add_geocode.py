@@ -32,7 +32,7 @@ def main():
         geo_resolution = "admin3"
 
     if not args.lat or not args.lng:
-        g = geocoder.arcgis(", ".join([a for a in [args.city, args.country, args.country] if a]))
+        g = geocoder.arcgis(", ".join([a for a in [args.city, args.province, args.country] if a]))
         if not g.ok:
             print(g)
             return
