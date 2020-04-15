@@ -76,7 +76,29 @@ def values2dataframe(values: list) -> pd.DataFrame:
         if len(d) < ncols:
             extension = ['']*(ncols-len(d))
             d.extend(extension)
-    data    = pd.DataFrame(data=data, columns=columns)
+    data  = pd.DataFrame(data=data, columns=columns)
+    data = data.astype({
+        "age": "string",
+        "sex": "string",
+        "city": "string",
+        "province": "string",
+        "country": "string",
+        "date_onset_symptoms": "string",
+        "date_admission_hospital": "string",
+        "date_confirmation": "string",
+        "symptoms": "string",
+        "lives_in_Wuhan": "bool",
+        "travel_history_dates": "string",
+        "travel_history_location": "string",
+        "additional_information": "string",
+        "chronic_disease_binary": "bool",
+        "chronic_disease": "string",
+        "source": "string",
+        "outcome": "string",
+        "date_death_or_discharge": "string",
+        "notes_for_discussion": "string",
+        "travel_history_binary": "bool",
+    })
     data['row'] = list(range(2, len(data)+2)) # keeping row number (+1 for 1 indexing +1 for column headers in sheet)
     data['row'] = data['row'].astype(str)
         
