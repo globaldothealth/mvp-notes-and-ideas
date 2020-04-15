@@ -66,13 +66,13 @@ regions/countries/states/provinces as a direct responsibility of an individual d
 #### General formats
 Here are some general formats to be used in all of the tables:
 
-- **Language**: in order to homogenise data input across multiple regions, we’re logging all information in English (this applies to the terminology used and spelling; e.g.: spelling “Brazil” instead of “Brasil”).
-- **Accentos and special characters**: No accents or special characters are to be used in the data input, this guarantees the universal applicability of the codes that automatically update our public data bases and maps (e.g.: spell “Tucuman” instead “Tucumán”, “Braco do Norte” instead of “Braço do Norte”, “Sudliche Weinstrasse” instead of “Südliche Weinstraße”).
-- **Dates**: the date format used is `DD.MM.YYYY` (e.g., the 26th of March, 2020 is logged as 26.03.2020). If there is a range of dates used, then separate these values by a hyphen (e.g., 25.03.2020-27.03.2020).
+- **Language**: in order to homogenise data input across multiple regions, we’re logging all information in English (this applies to the terminology used and spelling; e.g.: spelling `Brazil` instead of `Brasil`).
+- **Accentos and special characters**: No accents or special characters are to be used in the data input, this guarantees the universal applicability of the codes that automatically update our public data bases and maps (e.g.: spell `Tucuman` instead of `Tucumán`, `Braco do Norte` instead of `Braço do Norte`, `Sudliche Weinstrasse` instead of `Südliche Weinstraße`).
+- **Dates**: the date format used is `DD.MM.YYYY` (e.g., the 26th of March, 2020 is logged as `26.03.2020`). If there is a range of dates used, then separate these values by a hyphen (e.g., `25.03.2020-27.03.2020`).
 - **Location names**: where possible, please ensure that the spelling and capitalisation of countries, provinces and cities follows that of any existing instances in the table.
 - **Ages**: represented as an digits or, if an age bracket, then digits separated by a hyphen, e.g., `3`, for three years of age or `40-49` if the patient is in their 40s.
-- **Sex**: use either “male” or “female” (without the quotes).
-- **Symptoms and chronic disease**: entered as a colon separated list, for example, a patient with fever and cough would have their symptoms entered as “fever:cough”. A patient with pre-existing hypertension and diabetes would be described with “hypertension:diabetes”. Colons are used instead of commas so it is easy to export this data as CSV.
+- **Sex**: use either `male` or `female`.
+- **Symptoms and chronic disease**: entered as a colon separated list, for example, a patient with fever and cough would have their symptoms entered as “fever:cough”. A patient with pre-existing hypertension and diabetes would be described with `hypertension:diabetes`. Colons are used instead of commas so it is easy to export this data as CSV.
 
 #### Data input in the line list
 
@@ -93,17 +93,16 @@ obtained (web address/URL or the name of the report, if it is not available
 online).
   - `aggregated_num_cases`: number of cases that this row refers to. Only enter this if no case-level data is available, they all share the same available information and chances of being able to go back in time to fill-in more demographic data is very unlikely.
 - Additionally, add the demographic and/or clinical information available for each individual new case in the remaining fields (it’s important to consider that each individual line contains information about a particular case, so the priority is to maintain consistency in the logged information to an individual level – if information is presented in an aggregated manner and there is no way to disaggregate in a logical and consistent way, refrain from adding this information):
-  - `age`: the age of the patient. If this information is presented as an approximation, log the age range (e.g. for a patient in their 40s, the age
-information is logged as 40-49). See above for details.
+  - `age`: the age of the patient. If this information is presented as an approximation, log the age range (e.g. for a patient in their 40s, the age information is logged as 40-49). See above for details.
   - `sex`: whether the patient is male or female.
   - `date_onset_symptoms`: date in which the patient presented disease symptoms. See details above
   - `date_admission_hospital`: date in which the patient was admitted to a hospital or healthcare facility.
   - `symptoms`: list (separated by colons) of symptoms reported for the patient. See above for details
-  - `travel_history_binary`: log a value of one (1) if the report mentions the patient’s recent travel history, a value of zero (0) if the report states that the patient has NO recent travel history, and leave blank if the report makes no mention of the patient’s travel history.
-  - `travel_history_dates`: reported date in which the patient returned from their travel, or range of dates that encompass the patient’s travel history separated by a hyphen (-), with no added blank spaces.
-  - `travel_history_location`: location(s) that the patient visited recently under the format {city]/{region}:{country}. If multiple locations are mentioned, separate these with hyphens (-), with no added blank spaces.
+  - `travel_history_binary`: log a value of one `1` if the report mentions the patient’s recent travel history, a value of zero `0` if the report states that the patient has NO recent travel history, and leave blank if the report makes no mention of the patient’s travel history.
+  - `travel_history_dates`: reported date in which the patient returned from their travel, or range of dates that encompass the patient’s travel history separated by a hyphen `-`, with no added blank spaces.
+  - `travel_history_location`: location(s) that the patient visited recently under the format `{city]/{region}:{country}`. If multiple locations are mentioned, separate these with hyphens `-`, with no added blank spaces.
   - `additional_information`: any additional information presented for the case.
-  - `chronic_disease_binary`: log a value of one (1) if the report mentions any chronic disease or pre-existing health condition for the patient, a value of zero (0) if the report explicitly states that the patient had no chronic diseases of pre-existing health conditions or leave blank if the report doesn’t mention any chronic disease or pre-existing health conditions.
+  - `chronic_disease_binary`: log a value of one `1` if the report mentions any chronic disease or pre-existing health condition for the patient, a value of zero `0` if the report explicitly states that the patient had no chronic diseases of pre-existing health conditions or leave blank if the report doesn’t mention any chronic disease or pre-existing health conditions.
   - `chronic_disease`: describe the chronic disease(s) or pre-existing health condition(s) mentioned in the report, using the same format as for symptoms, see above for details.
 
 ##### Backfilling aggregated->per-case data
