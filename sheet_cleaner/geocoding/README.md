@@ -15,4 +15,13 @@ You can go through that file and look for geocodes yourself, then run the add_ge
 python3 add_geocode.py --country=France --city="Lyon" --province="Auvergne-Rhône-Alpes" --lat=0.1 --lng=0.2 --location="loc" --admin1="adm1" --admin2="adm2" --admin3="adm3"
 ```
 
-Note that case doesn't matter for `country`, `city` and `province`, the rest of the fields are going to be taken as is. Only `country`, `lat` and `lng` are mandatory.
+or simply
+
+```
+python3 add_geocode.py --country=France --city="Lyon"
+```
+
+to geocode a single city center.
+
+Note that case doesn't matter for `country`, `city` and `province`, the rest of the fields are going to be taken as is. Only `country` is mandatory.
+If `lat` or `lng` are missing then online geocoding will be attempted using AcrGIS.
