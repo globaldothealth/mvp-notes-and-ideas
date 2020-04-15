@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3 
 
 import argparse
 import logging
@@ -29,7 +29,7 @@ def main():
     # Create new sheet
     TEMPLATE = Template(temp_sid, token, credentials, is_service_account)
     response = TEMPLATE.copy(args.name, email)
-    
+
     # Update Config file 
     new_sheet_id = response['create']['id']
     sheet_sections = []
@@ -48,6 +48,8 @@ def main():
     config[sheet_str]['ID'] = new_id
     with open(args.config_file, 'w') as F:
         config.write(F)
+
+
 
 if __name__ == '__main__':
     main()

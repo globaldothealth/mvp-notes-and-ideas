@@ -230,52 +230,6 @@ class GoogleSheet(object):
             raise ValueError('Could not convert index "{}" to A1 notation'.format(num))
 
 
-    def new_sheet(self, config, config_file_name):
-        '''
-        Make new spreadsheet as copy of itself (columns, no data). 
-        + Add new sheet info to config file
-        '''
-
-        service = build('sheets', 'v4', credentials=self.Auth(), cache_discovery=False)
-        request = service.spreadsheets().get(spreadsheetId=self.spreadsheetid, fields='properties.title')
-        response = request.execute()
-        title = response['properties']['title']
-        spreadsheet = {
-            'properties': {'title': title},
-            'sheets': {
-                'properties': {
-                    'sheetId': 0, 
-                    'title': self.name
-                },
-                'data': { 
-                    'startRow' : 0,
-                    'startColumn' : 0,
-                    'rowData': {
-                        'values': [{'userEnteredValue': {'stringValue': c}} for c in self.columns]
-                    }
-                }
-            }
-        }
-        spreadsheet = service.spreadsheets().create(body=spreadsheet,
-                                    fields='spreadsheetId,sheets').execute()
-
-        sections = [s for s in config.sections() if s not in ['SHEET0', 'SHEET1'] and re.match(r'^SHEET\d*$', s)] # skip hubei, outside 
-        sheet_numbers = [int(re.search(r'SHEET(\d*)', s).group(1)) for s in sections] 
-        sheet_IDs = [int(config[s]['ID']) for s in sections]
-        SHEET = 'SHEET' + str(max(sheet_numbers) + 1)
-        new_ID  = str(max(sheet_IDs) + 1).zfill(3)
-    
-        config.add_section(SHEET)
-        config[SHEET]['NAME'] = self.name
-        config[SHEET]['SID'] = spreadsheet['spreadsheetId']
-        config[SHEET]['ID'] = new_ID
-        with open(config_file_name, 'w') as F:
-            config.write(F)
-            
-        new_sheet = GoogleSheet(spreadsheet['spreadsheetId'], self.name, new_ID, self.token, self.credentials, self.is_service_account)     
-        new_sheet.columns = self.columns.copy()
-        return new_sheet
-
 
 class Template(GoogleSheet):
     def __init__(self, spreadsheetid, token, credentials, is_service_account): 
@@ -285,7 +239,7 @@ class Template(GoogleSheet):
         self.is_service_account = is_service_account
 
 
-    def copy(self, copy_title, emailto):
+    def copy(self, copy_title, emailto, group=True):
         from apiclient import errors
         """Copy an existing file.
 
@@ -298,15 +252,25 @@ class Template(GoogleSheet):
         The copied file if successful, None otherwise.
          """
         service =  build('drive', 'v3', credentials=self.Auth(), cache_discovery=False)
-        copied_file = {'name': copy_title, 'title': copy_title, 'writersCanShare': True}
-        request = service.files().copy(fileId=self.spreadsheetid, body=copied_file)
+        body = {
+                'name': copy_title, 
+                'title': copy_title,
+                'writersCanShare': True, 
+                }
+        request = service.files().copy(fileId=self.spreadsheetid, body=body)
         create_response = request.execute()
         
+        
+        message = "A new COVI-19 Sheet has been created!\n"
+        message += r"https://docs.google.com/spreadsheets/d/"
+        message += str(create_response['id']) + r"/"
 
         permissions = {
-            "type": "group", 
+            "type": "group" if group else "user", 
             "role": "writer",
-            "emailAddress": emailto 
+            "emailAddress": emailto,
+            "sendNotificationEmail" : True,
+            "emailMessage" : message 
         }
 
         request = service.permissions().create(
@@ -342,3 +306,5 @@ class Template(GoogleSheet):
                         cache_discovery=False).spreadsheets()
         request = service.batchUpdate(spreadsheetId=spreadsheetId, body=body)
         return request.execute()
+
+
