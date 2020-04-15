@@ -20,6 +20,11 @@ class TestCSVGeocoder(unittest.TestCase):
         self.assertEqual(geo.admin1, "Jilin")
         self.assertEqual(geo.admin2, "Changchun City")
         self.assertEqual(geo.admin3, "Chaoyang District")
+        self.assertCountEqual(set(), self.geocoder.misses)
 
     def test_not_found(self):
         self.assertIsNone(self.geocoder.Geocode("foo", "bar", "baz"))
+        self.assertIsNone(self.geocoder.Geocode("foo", "bar", "baz"))
+        self.assertEqual(
+            [(csv_geocoder.Triple("foo", "bar", "baz"), 2)],
+            self.geocoder.misses.most_common(1))
