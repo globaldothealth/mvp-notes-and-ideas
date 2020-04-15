@@ -5,8 +5,15 @@ memory and allows for fast access.
 """
 
 from typing import NamedTuple, Dict
+from collections import Counter
 import csv
 import logging
+
+class Triple(NamedTuple):
+    """Triple used in input and misses lookup."""
+    city: str
+    province: str
+    country: str
 
 class Geocode(NamedTuple):
     """Geocode contains geocoding information about a location."""
@@ -37,7 +44,6 @@ class CSVGeocoder:
         # Do not try to be smart, just replicate whatever the spreadsheet was
         # doing. Data's so small it can all fit in memory and allow for fast
         # lookups.
-        
         self.geocodes :Dict[str, Geocode] = {}
         with open(init_csv_path, newline="", encoding='utf-8') as csvfile:
             # Delimiter is \t instead of , because google spreadsheets were
@@ -63,6 +69,7 @@ class CSVGeocoder:
                     row[_ADMIN1_ROW])
                 self.geocodes[row[_INPUT_ROW].lower()] = geocode
         logging.info("Loaded %d geocodes from %s", len(self.geocodes), init_csv_path)
+        self.misses = Counter()
         
 
     def Geocode(self, city :str="", province :str="", country :str="") -> Geocode:
@@ -74,4 +81,8 @@ class CSVGeocoder:
             None if no exact match were found.
         """
         key = f"{city};{province};{country}".lower()
-        return self.geocodes.get(key)
+        geocode = self.geocodes.get(key)
+        if not geocode:
+            self.misses.update([Triple(city, province, country)])
+            return None
+        return geocode
