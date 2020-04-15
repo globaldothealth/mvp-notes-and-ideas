@@ -65,7 +65,6 @@ def values2dataframe(values: list) -> pd.DataFrame:
     '''
     columns = values[0] 
     for i, c in enumerate(columns):
-
         # added when column name disappeared.
         if c.strip() == '' and columns[i-1] == 'province':
             columns[i] = 'country'
@@ -87,7 +86,8 @@ def values2dataframe(values: list) -> pd.DataFrame:
         "date_admission_hospital": "string",
         "date_confirmation": "string",
         "symptoms": "string",
-        # Should be bool but lot of info is on business trips to Wuhan etc, better kept as a string.
+        # Should be bool really but lot of info is on business trips to Wuhan
+        # etc, better kept as a string.
         "lives_in_Wuhan": "string",
         "travel_history_dates": "string",
         "travel_history_location": "string",
@@ -100,7 +100,8 @@ def values2dataframe(values: list) -> pd.DataFrame:
         "notes_for_discussion": "string",
         "travel_history_binary": "bool",
     })
-    data['row'] = list(range(2, len(data)+2)) # keeping row number (+1 for 1 indexing +1 for column headers in sheet)
+    # keeping row number (+1 for 1 indexing +1 for column headers in sheet)
+    data['row'] = list(range(2, len(data)+2))
     data['row'] = data['row'].astype(str)
         
     # added the strip due to white space getting inputed somehow. 
@@ -125,35 +126,6 @@ def index2A1(num: int) -> str:
         return 'B{}'.format(ascii_uppercase[num%26])
     else:
         raise ValueError('Could not convert index "{}" to A1 notation'.format(num))
-        
-def get_trailing_spaces(data: pd.DataFrame) -> pd.DataFrame:
-    '''
-    Generate error table for trailing whitespaces (front and back).
-    Args : 
-        data (pd.DataFrame)
-    Returns :
-        error_table (pd.DataFrame) : table listing cells with errors.
-    '''
-    df = data.copy()
-    
-    error_table = pd.DataFrame(columns=['row', 'column', 'value', 'fix'])
-    for c in df.columns:
-        if c == 'row':
-            continue
-        else:
-            try:
-                stripped = df[c].str.strip()
-            except AttributeError as ae:
-                print("column:", c)
-                raise ae
-            invalid_bool = stripped != df[c]
-            invalid      = df[invalid_bool][['row', 'ID']].copy()
-            invalid['column'] = c
-            invalid['value'] = df[c][invalid_bool].copy()
-            invalid['fix'] = stripped[invalid_bool]
-        error_table = error_table.append(invalid, ignore_index=True, sort=True)        
-    return error_table
-
 
 def get_NA_errors(data: pd.DataFrame) -> pd.DataFrame:
     '''
@@ -209,18 +181,7 @@ def generate_error_tables(data):
         row = r.copy()
         fix = False
         col = row['column']
-        if col == 'age':
-            test = bool(re.match(rgx_age, row['value'].replace(' ', '')))
-            if test:
-                fix = row['value'].replace(' ', '')
-
-        elif col  == 'country':
-            pass
-
-        elif col in date_columns:
-            pass
-
-        elif col == 'lives_in_Wuhan':
+        if col == 'lives_in_Wuhan':
             s = row['value']
             test1 = bool(re.match(rgx_lives_in_wuhan, s.lower().strip()))
             test2 = True if s in ['1', '0'] else False
@@ -254,3 +215,34 @@ def duplicate_rows_per_column(df: pd.DataFrame, col: str) -> pd.DataFrame:
         df.at[i, 'aggr'] = np.nan
         df = df.append([row] * num, ignore_index=True)
     return df
+
+def trim_df(df: pd.DataFrame) -> pd.DataFrame:
+    """Trims whitespace from all columns/rows in the dataframe."""
+    for col in df.convert_dtypes().select_dtypes("string"):
+        df[col] = df[col].str.strip()
+    return df
+
+def _fix_sex(val: str) -> str:
+    low_val = val.lower()
+    if low_val == "m":
+        return "male"
+    elif low_val == "f":
+        return "female"
+    elif low_val == "female" or low_val == "male":
+        return low_val
+    return val
+
+def fix_sex(sex_col: pd.Series) -> pd.Series:
+    """Fixes various ways of spelling male/female."""
+    return sex_col.map(_fix_sex)
+
+def _fix_na(val: str) -> str:
+    up_val = val.upper()
+    if up_val == "N/A":
+        return "NA"
+    elif up_val == "NA":
+        return "NA"
+    return val
+
+def fix_na(col: pd.Series) -> pd.Series:
+    return col.map(_fix_na)
