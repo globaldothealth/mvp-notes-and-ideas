@@ -36,4 +36,3 @@ This command creates the folder `ocd-env` if it doesn't exist. You don't need to
 ```console
     $ deactivate
 ```
-

@@ -64,8 +64,7 @@ def main():
         data.sex = fix_sex(data.sex)
 
         # fix N/A => NA
-        # TODO: This should be strings.
-        for col in data.select_dtypes("object"):
+        for col in data.select_dtypes("string"):
             data[col] = fix_na(data[col])
 
         # Regex fixes

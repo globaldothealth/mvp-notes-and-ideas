@@ -9,20 +9,16 @@ import re
 import math
 from string import ascii_uppercase 
 
-from typing import Dict, List
+from typing import List
 
 import pandas as pd
 import numpy as np 
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from google.oauth2 import service_account
 
-from constants import rgx_age, rgx_sex, rgx_country, rgx_date, rgx_lives_in_wuhan, date_columns
-from google.auth.transport.requests import Request
+from constants import rgx_age, rgx_sex, rgx_country, rgx_date, rgx_lives_in_wuhan, date_columns, column_to_type
 from objects import GoogleSheet
 
 
-def get_GoogleSheets(config: configparser.ConfigParser) -> list:
+def get_GoogleSheets(config: configparser.ConfigParser) -> List[GoogleSheet]:
     '''
     Loop through different sheets in config file, and init objects.
 
@@ -69,15 +65,18 @@ def values2dataframe(values: list) -> pd.DataFrame:
         if c.strip() == '' and columns[i-1] == 'province':
             columns[i] = 'country'
 
-    ncols   = len(columns)
-    data    = values[1:]
+    ncols = len(columns)
+    data = values[1:]
     for d in data:
         if len(d) < ncols:
             extension = ['']*(ncols-len(d))
             d.extend(extension)
-    data    = pd.DataFrame(data=data, columns=columns)
-    data = data.convert_dtypes()
-    data['row'] = list(range(2, len(data)+2)) # keeping row number (+1 for 1 indexing +1 for column headers in sheet)
+    data = pd.DataFrame(data=data, columns=columns)
+    for col in column_to_type:
+        if col in columns:
+            data[col] = data[col].astype(column_to_type[col], errors="ignore")
+    # keeping row number (+1 for 1 indexing +1 for column headers in sheet)
+    data['row'] = list(range(2, len(data)+2))
     data['row'] = data['row'].astype(str)
         
     # added the strip due to white space getting inputed somehow. 
@@ -157,23 +156,7 @@ def generate_error_tables(data):
         row = r.copy()
         fix = False
         col = row['column']
-        if col == 'sex':
-            test = row['value'].lower().strip() in ['male', 'female', '']
-            if test:
-                fix = row['value'].lower().strip()
-
-        elif col == 'age':
-            test = bool(re.match(rgx_age, row['value'].replace(' ', '')))
-            if test:
-                fix = row['value'].replace(' ', '')
-
-        elif col  == 'country':
-            pass
-
-        elif col in date_columns:
-            pass
-
-        elif col == 'lives_in_Wuhan':
+        if col == 'lives_in_Wuhan':
             s = row['value']
             test1 = bool(re.match(rgx_lives_in_wuhan, s.lower().strip()))
             test2 = True if s in ['1', '0'] else False
