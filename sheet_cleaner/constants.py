@@ -24,3 +24,28 @@ rgx_country    = anchor_wrap(boolean_or(["[A-Z]{1}[a-z]+(\\s[A-Z]{1}[a-z]+)*", n
 rgx_geo_res    = anchor_wrap(boolean_or(["point", "admin[0123]{0,1}", na_string, rgx_empty]))
 rgx_date       = anchor_wrap(boolean_or(date_patterns+[na_string, rgx_empty]))
 rgx_lives_in_wuhan = anchor_wrap(boolean_or(["yes", "no", rgx_na_value, rgx_empty]))
+
+column_to_type = {
+    "age": "string",
+    "sex": "string",
+    "city": "string",
+    "province": "string",
+    "country": "string",
+    "date_onset_symptoms": "string",
+    "date_admission_hospital": "string",
+    "date_confirmation": "string",
+    "symptoms": "string",
+    # Should be bool really but lot of info is on business trips to Wuhan
+    # etc, better kept as a string.
+    "lives_in_Wuhan": "string",
+    "travel_history_dates": "string",
+    "travel_history_location": "string",
+    "additional_information": "string",
+    "chronic_disease_binary": "bool",
+    "chronic_disease": "string",
+    "source": "string",
+    "outcome": "string",
+    "date_death_or_discharge": "string",
+    "notes_for_discussion": "string",
+    "travel_history_binary": "bool",
+}

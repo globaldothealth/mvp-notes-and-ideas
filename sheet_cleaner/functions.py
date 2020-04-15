@@ -9,20 +9,16 @@ import re
 import math
 from string import ascii_uppercase 
 
-from typing import Dict, List
+from typing import List
 
 import pandas as pd
 import numpy as np 
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from google.oauth2 import service_account
 
-from constants import rgx_age, rgx_sex, rgx_country, rgx_date, rgx_lives_in_wuhan, date_columns
-from google.auth.transport.requests import Request
+from constants import rgx_age, rgx_sex, rgx_country, rgx_date, rgx_lives_in_wuhan, date_columns, column_to_type
 from objects import GoogleSheet
 
 
-def get_GoogleSheets(config: configparser.ConfigParser) -> list:
+def get_GoogleSheets(config: configparser.ConfigParser) -> List[GoogleSheet]:
     '''
     Loop through different sheets in config file, and init objects.
 
@@ -69,37 +65,16 @@ def values2dataframe(values: list) -> pd.DataFrame:
         if c.strip() == '' and columns[i-1] == 'province':
             columns[i] = 'country'
 
-    ncols   = len(columns)
-    data    = values[1:]
+    ncols = len(columns)
+    data = values[1:]
     for d in data:
         if len(d) < ncols:
             extension = ['']*(ncols-len(d))
             d.extend(extension)
-    data  = pd.DataFrame(data=data, columns=columns)
-    data = data.astype({
-        "age": "string",
-        "sex": "string",
-        "city": "string",
-        "province": "string",
-        "country": "string",
-        "date_onset_symptoms": "string",
-        "date_admission_hospital": "string",
-        "date_confirmation": "string",
-        "symptoms": "string",
-        # Should be bool really but lot of info is on business trips to Wuhan
-        # etc, better kept as a string.
-        "lives_in_Wuhan": "string",
-        "travel_history_dates": "string",
-        "travel_history_location": "string",
-        "additional_information": "string",
-        "chronic_disease_binary": "bool",
-        "chronic_disease": "string",
-        "source": "string",
-        "outcome": "string",
-        "date_death_or_discharge": "string",
-        "notes_for_discussion": "string",
-        "travel_history_binary": "bool",
-    })
+    data = pd.DataFrame(data=data, columns=columns)
+    for col in column_to_type:
+        if col in columns:
+            data[col] = data[col].astype(column_to_type[col], errors="ignore")
     # keeping row number (+1 for 1 indexing +1 for column headers in sheet)
     data['row'] = list(range(2, len(data)+2))
     data['row'] = data['row'].astype(str)
