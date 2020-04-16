@@ -21,7 +21,6 @@ config.optionxform=str # preserve case
 config.read(args.config_file)
 
 def main():
-
     token = config['SHEETS'].get('TOKEN')
     credentials = config['SHEETS'].get('CREDENTIALS')
     temp_sid = config['TEMPLATE'].get('SID')
@@ -33,7 +32,6 @@ def main():
     response = TEMPLATE.copy(args.name, args.worksheet, email)
 
     # Update Config file 
-    new_sheet_id = response['create']['id']
     sheet_sections = []
     for s in config.sections():
         if s not in ['SHEET0', 'SHEET1'] and re.match(r'^SHEET\d*$', s):
@@ -55,9 +53,9 @@ def main():
     ref_info = config['REFERENCE']
     ref_sid  = ref_info.get('SID')
     ref_name = ref_info.get('NAME')
-    Reference = GoogleSheet(ref_sid, ref_name, None,
+    ref = GoogleSheet(ref_sid, ref_name, None,
             token, credentials, is_service_account)
-    rowNum = len(Reference.read_values(Reference.name + '!A:A')) + 1
+    rowNum = len(ref.read_values(ref.name + '!A:A')) + 1
     URL = 'https://docs.google.com/spreadsheets/d/{}/'.format(response['create']['id'])
     new_values = [
             args.name, 
@@ -72,7 +70,7 @@ def main():
         'majorDimension': 'ROWS',
         'values': [new_values]
     }
-    Reference.insert_values(body)
+    ref.insert_values(body)
     
 
 if __name__ == '__main__':
