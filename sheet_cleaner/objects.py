@@ -38,7 +38,9 @@ class GoogleSheet(object):
           scopes (str) scopes associated to credentials.
         '''
 
-        SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+        SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 
+                  'https://www.googleapis.com/auth/drive']
+        
         TOKEN  = self.token 
         CREDENTIALS = self.credentials 
 
@@ -228,50 +230,83 @@ class GoogleSheet(object):
             raise ValueError('Could not convert index "{}" to A1 notation'.format(num))
 
 
-    def new_sheet(self, config, config_file_name):
-        '''
-        Make new spreadsheet as copy of itself (columns, no data). 
-        + Add new sheet info to config file
-        '''
 
-        service = build('sheets', 'v4', credentials=self.Auth(), cache_discovery=False)
-        request = service.spreadsheets().get(spreadsheetId=self.spreadsheetid, fields='properties.title')
-        response = request.execute()
-        title = response['properties']['title']
-        spreadsheet = {
-            'properties': {'title': title},
-            'sheets': {
-                'properties': {
-                    'sheetId': 0, 
-                    'title': self.name
-                },
-                'data': { 
-                    'startRow' : 0,
-                    'startColumn' : 0,
-                    'rowData': {
-                        'values': [{'userEnteredValue': {'stringValue': c}} for c in self.columns]
+class Template(GoogleSheet):
+    def __init__(self, spreadsheetid, token, credentials, is_service_account): 
+        self.spreadsheetid = spreadsheetid
+        self.token = token
+        self.credentials = credentials
+        self.is_service_account = is_service_account
+        self.responses = {}
+
+    def copy(self, copy_title, worksheet,  emailto):
+        from apiclient import errors
+        """Copy an existing file.
+
+        Args:
+            service: Drive API service instance.
+            origin_file_id: ID of the origin file to copy.
+            copy_title: Title of the copy.
+
+        Returns:
+        The copied file if successful, None otherwise.
+         """
+        service =  build('drive', 'v3', credentials=self.Auth(), cache_discovery=False)
+        body = {
+                'name': copy_title, 
+                'title': copy_title,
+                'writersCanShare': True, 
+                }
+        request = service.files().copy(fileId=self.spreadsheetid, body=body)
+        create_response = request.execute()
+        
+        
+        message = "A new COVI-19 Sheet has been created!\n"
+        message += r"https://docs.google.com/spreadsheets/d/"
+        message += str(create_response['id']) + r"/"
+
+        permissions = {
+            "type": "group", 
+            "role": "writer",
+            "emailAddress": emailto,
+        }
+
+        request = service.permissions().create(
+            fileId=create_response['id'],
+            body=permissions,
+            fields='id',
+            emailMessage=message,
+            sendNotificationEmail = True
+        )
+        print(create_response)
+        permissions_response = request.execute()
+        name_response = self.rename_sheet(create_response['id'],
+                            worksheet)
+
+        return {'create': create_response, 
+                'permissions': permissions_response,
+                'name' : name_response}
+        
+    def rename_sheet(self, spreadsheetId, new_name, sheet_id=0):
+        
+        body = {
+            'requests': [
+                {
+                    'updateSheetProperties': {
+                        "properties": {
+                            "sheetId": sheet_id,
+                            "title": new_name
+                        },
+                        "fields": "title"
                     }
                 }
-            }
+            ]
         }
-        spreadsheet = service.spreadsheets().create(body=spreadsheet,
-                                    fields='spreadsheetId,sheets').execute()
 
-        # Add columns : 
-        # Get greatest number in config file [SHEETX]:
-        sections = [s for s in config.sections() if s not in ['SHEET0', 'SHEET1'] and re.match(r'^SHEET\d*$', s)] # skip hubei, outside 
-        sheet_numbers = [int(re.search(r'SHEET(\d*)', s).group(1)) for s in sections] 
-        sheet_IDs = [int(config[s]['ID']) for s in sections]
-        SHEET = 'SHEET' + str(max(sheet_numbers) + 1)
-        new_ID  = str(max(sheet_IDs) + 1).zfill(3)
-    
-        config.add_section(SHEET)
-        config[SHEET]['NAME'] = self.name
-        config[SHEET]['SID'] = spreadsheet['spreadsheetId']
-        config[SHEET]['ID'] = new_ID
-        with open(config_file_name, 'w') as F:
-            config.write(F)
-            
-        new_sheet = GoogleSheet(spreadsheet['spreadsheetId'], self.name, new_ID, self.token, self.credentials, self.is_service_account)     
-        new_sheet.columns = self.columns.copy()
-        return new_sheet
+        service = build('sheets', 'v4', credentials=self.Auth(),
+                        cache_discovery=False).spreadsheets()
+        request = service.batchUpdate(spreadsheetId=spreadsheetId, body=body)
+        return request.execute()
+
+
+
