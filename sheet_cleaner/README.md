@@ -1,8 +1,12 @@
-# Sheets cleanup scripts.
+# Sheets cleanup scripts
 
-This directory contains scripts that go over the google sheets and produces a merged csv file with all the data and geocode information included.
+This directory contains scripts that go over the google sheets and produces a merged csv file with all the data and post-processing information like geocode included.
 
-## Generating CSV line list.
+## Contributions to the spreadsheets
+
+Standard Operating Procedures are described in the `SOP.md` file in this directory.
+
+## Generating CSV line list
 
 ### One-time setup.
 
