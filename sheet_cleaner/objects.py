@@ -268,15 +268,15 @@ class Template(GoogleSheet):
         permissions = {
             "type": "group", 
             "role": "writer",
-            "emailAddress": 'thomas.brewer@childrens.harvard.edu',
-            "sendNotificationEmail" : True,
-            "emailMessage" : message 
+            "emailAddress": emailto,
         }
 
         request = service.permissions().create(
             fileId=create_response['id'],
             body=permissions,
-            fields='id' 
+            fields='id',
+            emailMessage=message,
+            sendNotificationEmail = True
         )
         print(create_response)
         permissions_response = request.execute()
