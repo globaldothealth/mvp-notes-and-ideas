@@ -2,6 +2,7 @@ import unittest
 from geocoding import csv_geocoder
 import pathlib
 import os
+import io
 
 class TestCSVGeocoder(unittest.TestCase):
 
@@ -28,3 +29,9 @@ class TestCSVGeocoder(unittest.TestCase):
         self.assertEqual(
             [(csv_geocoder.Triple("foo", "bar", "baz"), 2)],
             self.geocoder.misses.most_common(1))
+    
+    def test_write_to_csv(self):
+        self.assertIsNone(self.geocoder.Geocode("foo", "bar", "baz"))
+        file = io.StringIO("")
+        self.geocoder.WriteMissesToFile(file)
+        self.assertEqual('foo,bar,baz,1\r\n', file.getvalue())

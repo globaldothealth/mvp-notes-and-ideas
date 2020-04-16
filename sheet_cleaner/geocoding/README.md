@@ -8,8 +8,8 @@ Tab-separated file format is used to avoid potential pitfalls with commas in CSV
 
 ## Adding missing geocodes
 
-With each run of the sheet_cleaner script, the top 10 missing geocodes are logged in the `cleanup.log` file locally.
-You can go through that file and look for geocodes yourself, then run the add_geocode.py script to add it to the `geo_admin.tsv` file and them push it to github.
+With each run of the sheet_cleaner script, the top 10 missing geocodes are logged in the `cleanup.log` file locally and all misses are written to `geocode_misses.csv`.
+You can go through those logs, then run the add_geocode.py script to add geocodes to the `geo_admin.tsv` file and them push it to github.
 
 ```console
 python3 add_geocode.py --country=France --city="Lyon" --province="Auvergne-Rhône-Alpes" --lat=0.1 --lng=0.2 --location="loc" --admin1="adm1" --admin2="adm2" --admin3="adm3"
