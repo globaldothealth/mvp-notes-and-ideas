@@ -1,5 +1,10 @@
-date_columns = ['date_onset_symptoms', 'date_admission_hospital', 'date_confirmation',
-                'travel_history_dates', 'date_death_or_discharge']
+date_columns = [
+    'date_onset_symptoms',
+    'date_admission_hospital',
+    'date_confirmation',
+    'travel_history_dates',
+    'date_death_or_discharge',
+]
 
 
 # REGEX PATTERNS
@@ -20,8 +25,6 @@ date_patterns = [rgx_date_, rgx_date_range, rgx_left_date_range, rgx_right_date_
 
 rgx_age        = anchor_wrap(boolean_or([rgx_single_age, rgx_age_range, na_string, rgx_empty]))
 rgx_sex        = anchor_wrap(boolean_or(['male', 'female', na_string, rgx_empty]))
-rgx_country    = anchor_wrap(boolean_or(["[A-Z]{1}[a-z]+(\\s[A-Z]{1}[a-z]+)*", na_string, rgx_empty]))
-rgx_geo_res    = anchor_wrap(boolean_or(["point", "admin[0123]{0,1}", na_string, rgx_empty]))
 rgx_date       = anchor_wrap(boolean_or(date_patterns+[na_string, rgx_empty]))
 rgx_lives_in_wuhan = anchor_wrap(boolean_or(["yes", "no", rgx_na_value, rgx_empty]))
 

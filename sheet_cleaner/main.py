@@ -21,8 +21,6 @@ parser = argparse.ArgumentParser(
     description='Cleanup sheet and output generation script')
 parser.add_argument('-c', '--config_file', type=str, default="CONFIG",
                     help='Path to the config file')
-parser.add_argument('--sleep_time_sec', type=int, default=30,
-                    help='Sleep time between various fixes (to be removed)')
 parser.add_argument('-p', '--push_to_git', default=False, const=True, action="store_const", dest='push_to_git',
                     help='Whether to push to the git repo specified in the config')
 
@@ -31,7 +29,9 @@ def main():
     config = configparser.ConfigParser()
     config.optionxform=str # to preserve case
     config.read(args.config_file) 
-    logging.basicConfig(filename='cleanup.log', filemode="w", level=logging.INFO)
+    logging.basicConfig(
+        format='%(asctime)s %(filename)s:%(lineno)d %(message)s',
+        filename='cleanup.log', filemode="w", level=logging.INFO)
     
 
     sheets = get_GoogleSheets(config)
@@ -50,6 +50,8 @@ def main():
 
          # Expand aggregated cases into one row each.
         logging.info("Rows before expansion: %d", len(data))
+        if len(data) > 150000:
+            logging.warning("Sheet %s has more than 150K rows, it should be split soon", s.name)
         data.aggregated_num_cases = pd.to_numeric(data.aggregated_num_cases, errors='coerce')
         data = duplicate_rows_per_column(data, "aggregated_num_cases")
         logging.info("Rows after expansion: %d", len(data))
@@ -73,7 +75,6 @@ def main():
             logging.info('fixing %d regexps', len(fixable))
             s.fix_cells(fixable)
             data = values2dataframe(s.read_values(range_))
-            time.sleep(args.sleep_time_sec)
         
         # ~ negates, here clean = data with IDs not in non_fixable IDs.
         clean = data[~data.ID.isin(non_fixable.ID)]
