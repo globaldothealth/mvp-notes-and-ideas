@@ -3,7 +3,7 @@
 import argparse
 import logging
 import configparser
-from objects import Template, GoogleSheet
+from spreadsheet import Template, GoogleSheet
 import re
 
 parser = argparse.ArgumentParser(

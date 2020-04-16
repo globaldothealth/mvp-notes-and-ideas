@@ -15,7 +15,7 @@ import pandas as pd
 import numpy as np 
 
 from constants import rgx_age, rgx_sex, rgx_date, rgx_lives_in_wuhan, date_columns, column_to_type
-from objects import GoogleSheet
+from spreadsheet import GoogleSheet
 
 
 def get_GoogleSheets(config: configparser.ConfigParser) -> List[GoogleSheet]:
