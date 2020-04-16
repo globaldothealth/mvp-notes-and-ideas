@@ -53,9 +53,9 @@ def main():
     ref_info = config['REFERENCE']
     ref_sid  = ref_info.get('SID')
     ref_name = ref_info.get('NAME')
-    Reference = GoogleSheet(ref_sid, ref_name, None,
+    ref = GoogleSheet(ref_sid, ref_name, None,
             token, credentials, is_service_account)
-    rowNum = len(Reference.read_values(Reference.name + '!A:A')) + 1
+    rowNum = len(ref.read_values(ref.name + '!A:A')) + 1
     URL = 'https://docs.google.com/spreadsheets/d/{}/'.format(response['create']['id'])
     new_values = [
             args.name, 
@@ -70,7 +70,7 @@ def main():
         'majorDimension': 'ROWS',
         'values': [new_values]
     }
-    Reference.insert_values(body)
+    ref.insert_values(body)
     
 
 if __name__ == '__main__':
