@@ -1,12 +1,14 @@
 '''
 GoogleSheet Object
 '''
+from apiclient import errors
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2 import service_account
 import pickle
 import os
+import string
 import re
 
 class GoogleSheet(object):
@@ -14,14 +16,13 @@ class GoogleSheet(object):
     Simple object to help added when we started getting multiple sheets.
     Attributes:
     :spreadsheetid:-> str, Google Spreadsheet ID (from url).
-    :name: -> list or str, sheet name (list when multiple sheets in 1 spreadsheet).
-    :ID: -> str, code for ID column in sheets (specific to region).
+    :base_id: -> str, base string to generate IDs from.
+    :name: -> str, sheet name.
     '''
-
-    def __init__(self, spreadsheetid, name, reference_id, token, credentials, is_service_account):
+    def __init__(self, spreadsheetid, base_id, name, token, credentials, is_service_account):
         self.spreadsheetid = spreadsheetid 
         self.name = name
-        self.ID = reference_id
+        self.base_id = base_id
         self.token = token
         self.credentials = credentials
         self.is_service_account = is_service_account
@@ -30,13 +31,7 @@ class GoogleSheet(object):
 
 
     def Auth(self):
-        '''
-        Sets credentials for sheet.	
-	Args:
-          token (str) : path to pickled credentials. 
-          credentials (str): Path Google API credentials (json).
-          scopes (str) scopes associated to credentials.
-        '''
+        '''Gets credentials for sheet and drive API access'''
 
         SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 
                   'https://www.googleapis.com/auth/drive']
@@ -100,7 +95,6 @@ class GoogleSheet(object):
         response = request.execute()
         return response
 
-
     def get_columns(self):
         r = f'{self.name}!A1:AG1'
         columns = self.read_values(r)[0]
@@ -141,74 +135,6 @@ class GoogleSheet(object):
         
         return fixed
 
-    def insert_ids(self):
-        '''
-        Insert Id numbers for any row that does not have any. 
-        ID numbers are sequential, so we do MAX(current) + 1 for each new ID. 
-        '''
-    
-        id_col = self.index2A1(self.columns.index('ID'))
-        if 'country' in self.columns:
-            country_col = self.index2A1(self.columns.index('country'))
-
-        else:
-            country_col = 'F'
-    
-        id_range = f'{self.name}!{id_col}:{id_col}'
-        IDS = self.read_values(id_range)[1:]
-    
-        country_range = f'{self.name}!{country_col}:{country_col}'
-        countries = self.read_values(country_range)
-    
-        diff = len(countries) - len(IDS)
-        
-        ids = []
-        maxid = -9999
-        for I in IDS:
-            if len(I) == 1:
-                x = I[0]
-                if '-' in x:
-                    num = x.split('-')[1]
-                else:
-                    num = x
-                num = int(num)
-                ids.append(num)
-                if num > maxid :
-                    maxid = num
-            else:
-                ids.append(None)
-    
-        # Fill in null values
-        for i, num in enumerate(ids):
-            if num is None:
-                ids[i] = maxid + 1
-                maxid += 1
-    
-        # append new numbers for difference in ids and countries.
-        new_ids = []
-        while len(new_ids) < diff:
-            new_ids.append(maxid + 1)
-            maxid += 1
-    
-        new_ids = ids + new_ids
-    
-        # insert new ids : 
-        if self.name in ['Hubei', 'outside_Hubei']:
-            new_values = [[str(x)] for x in new_ids]
-        else:
-            new_values =[[f'{self.ID}-{x}'] for x in new_ids]
-    
-        start = len(IDS) + 1
-        end   = start + len(new_values)
-        new_range = f'{self.name}!{id_col}2:{id_col}{end}'
-        body = {
-            'range': new_range,
-            'majorDimension': 'ROWS',
-            'values': new_values[:-1]
-        }
-        return self.insert_values(body, inputoption='RAW')
-
-
     def index2A1(self, num: int) -> str:
         '''
         Converts column index to A1 notation. 
@@ -219,7 +145,7 @@ class GoogleSheet(object):
             A1 notation (str)
     
         '''
-        alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        alpha = string.ascii_uppercase
         if 0 <= num <= 25:
             return alpha[num]
         elif 26 <= num <= 51:
@@ -233,14 +159,10 @@ class GoogleSheet(object):
 
 class Template(GoogleSheet):
     def __init__(self, spreadsheetid, token, credentials, is_service_account): 
-        self.spreadsheetid = spreadsheetid
-        self.token = token
-        self.credentials = credentials
-        self.is_service_account = is_service_account
+        super().__init__(spreadsheetid, "", "", token, credentials, is_service_account)
         self.responses = {}
 
     def copy(self, copy_title, worksheet,  emailto):
-        from apiclient import errors
         """Copy an existing file.
 
         Args:
@@ -261,9 +183,8 @@ class Template(GoogleSheet):
         create_response = request.execute()
         
         
-        message = "A new COVI-19 Sheet has been created!\n"
-        message += r"https://docs.google.com/spreadsheets/d/"
-        message += str(create_response['id']) + r"/"
+        message = "A new COVID-19 Sheet has been created!\n"
+        message += f"https://docs.google.com/spreadsheets/d/{create_response['id']}/"
 
         permissions = {
             "type": "group", 
@@ -307,6 +228,3 @@ class Template(GoogleSheet):
                         cache_discovery=False).spreadsheets()
         request = service.batchUpdate(spreadsheetId=spreadsheetId, body=body)
         return request.execute()
-
-
-

@@ -21,7 +21,6 @@ config.optionxform=str # preserve case
 config.read(args.config_file)
 
 def main():
-
     token = config['SHEETS'].get('TOKEN')
     credentials = config['SHEETS'].get('CREDENTIALS')
     temp_sid = config['TEMPLATE'].get('SID')
@@ -33,7 +32,6 @@ def main():
     response = TEMPLATE.copy(args.name, args.worksheet, email)
 
     # Update Config file 
-    new_sheet_id = response['create']['id']
     sheet_sections = []
     for s in config.sections():
         if s not in ['SHEET0', 'SHEET1'] and re.match(r'^SHEET\d*$', s):

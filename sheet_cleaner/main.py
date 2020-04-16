@@ -57,7 +57,7 @@ def main():
         logging.info("Rows after expansion: %d", len(data))
 
         # Generate IDs for each row sequentially following the sheet_id-inc_int pattern.
-        data['ID'] = s.ID + "-" + pd.Series(range(1, len(data)+1)).astype(str)
+        data['ID'] = s.base_id + "-" + pd.Series(range(1, len(data)+1)).astype(str)
 
         # Remove whitespace.
         data = trim_df(data)
