@@ -9,7 +9,7 @@ from sheet_processor import SheetProcessor
 from unittest.mock import MagicMock, patch
 from spreadsheet import GoogleSheet
 
-class TestFunctions(unittest.TestCase):
+class TestSheetProcessor(unittest.TestCase):
 
     @patch('spreadsheet.GoogleSheet')
     def test_ok(self, mock_sheet):
@@ -31,13 +31,13 @@ class TestFunctions(unittest.TestCase):
             mock_sheet.name = "sheet-name"
             mock_sheet.base_id = "000"
             mock_sheet.read_values = MagicMock(side_effect=[
-                # First read returns the columns only, voluntarily in a random order so that we check that the code doesn't depend on column ordering.
-                #[["age","sex","city","province","country","aggregated_num_cases","date_onset_symptoms","date_admission_hospital","date_confirmation","symptoms","lives_in_Wuhan","travel_history_dates","travel_history_location","reported_market_exposure","additional_information","chronic_disease_binary","chronic_disease","source","sequence_available","outcome","date_death_or_discharge","notes_for_discussion","data_moderator_initials","travel_history_binary", 'longitude', 'latitude', 'admin1', 'location', 'admin3', 'admin2', 'geo_resolution', 'country_new', 'admin_id']],
-                # Second read reads the columns+data.
+                # Only one read is done in this test.
+                # First row has columns only, voluntarily in a random order so that we check that the code doesn't depend on column ordering.
+                # Second row has the data.
                 [
                     ["age","sex","city","province","country","aggregated_num_cases","date_onset_symptoms","date_admission_hospital","date_confirmation","symptoms","lives_in_Wuhan","travel_history_dates","travel_history_location","reported_market_exposure","additional_information","chronic_disease_binary","chronic_disease","source","sequence_available","outcome","date_death_or_discharge","notes_for_discussion","data_moderator_initials","travel_history_binary", 'longitude', 'latitude', 'admin1', 'location', 'admin3', 'admin2', 'geo_resolution', 'country_new', 'admin_id'],
                     ["24", "male","cit","pro","coun","4","20.04.2020","21.04.2020","20.04.2020","symp","no","","","","handsome guy","0","","fake","0","discharged","25.04.2020","","TF","0", '14.15', '16.17', 'admin1', 'loc', 'admin3', 'admin2', 'point', 'France', '42'],
                 ],
             ])
             processor = SheetProcessor([mock_sheet], geocoder, config)
-            processor.Process()
+            processor.process()

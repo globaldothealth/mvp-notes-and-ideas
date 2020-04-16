@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 
-'''
-Run all sheet cleaning scripts.
-'''
-testing = False
-
+'''Run all sheet cleaning scripts.'''
 import argparse
 import configparser
 import logging
@@ -14,10 +10,11 @@ import time
 
 import pandas as pd
 
+from functions import (duplicate_rows_per_column, fix_na, fix_sex,
+                       generate_error_tables, get_GoogleSheets, trim_df,
+                       values2dataframe)
 from geocoding import csv_geocoder
-from functions import get_GoogleSheets, values2dataframe, generate_error_tables, duplicate_rows_per_column, trim_df, fix_sex, fix_na
 from sheet_processor import SheetProcessor
-
 
 parser = argparse.ArgumentParser(
     description='Cleanup sheet and output generation script')
@@ -35,15 +32,14 @@ def main():
         format='%(asctime)s %(filename)s:%(lineno)d %(message)s',
         filename='cleanup.log', filemode="w", level=logging.INFO)
     
-    sheets = get_GoogleSheets(config)
-    # Load geocoder early so that invalid tsv paths errors are caught early on.
     geocoder = csv_geocoder.CSVGeocoder(config['GEOCODING'].get('TSV_PATH'))
-    
+    sheets = get_GoogleSheets(config)
+
     processor = SheetProcessor(sheets, geocoder, config)
-    processor.Process()
+    processor.process()
 
     if args.push_to_git:
-        processor.PushToGithub()
+        processor.push_to_github()
 
 
 if __name__ == '__main__':

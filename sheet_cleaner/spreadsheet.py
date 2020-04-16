@@ -1,15 +1,16 @@
-'''
-GoogleSheet Object
-'''
+'''Classes to manipulate spreadsheets.'''
+import os
+import pickle
+import re
+import string
+
 from apiclient import errors
-from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+
 from google.auth.transport.requests import Request
 from google.oauth2 import service_account
-import pickle
-import os
-import string
-import re
+
 
 class GoogleSheet(object):
     '''
@@ -26,10 +27,10 @@ class GoogleSheet(object):
         self.token = token
         self.credentials = credentials
         self.is_service_account = is_service_account
-        self.columns = self.get_columns()
+        self.columns = self._get_columns()
         self.column_dict = {c:self.index2A1(i) for i,c in enumerate(self.columns)}
 
-    def Auth(self):
+    def _auth(self):
         '''Gets credentials for sheet and drive API access'''
 
         SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 
@@ -71,7 +72,7 @@ class GoogleSheet(object):
             list: values from range_
     	'''
     
-        service = build('sheets', 'v4', credentials=self.Auth(), cache_discovery=False)
+        service = build('sheets', 'v4', credentials=self._auth(), cache_discovery=False)
         sheet = service.spreadsheets()
         values  = sheet.values().get(spreadsheetId=self.spreadsheetid, range=range_).execute().get('values', [])	
         if not values:
@@ -84,7 +85,7 @@ class GoogleSheet(object):
         inputoption = kwargs.get('inputoption', 'USER_ENTERED')
 
         # Call the Sheets API
-        service = build('sheets', 'v4', credentials = self.Auth())
+        service = build('sheets', 'v4', credentials = self._auth())
         sheet   = service.spreadsheets()
         request = sheet.values().update(spreadsheetId=self.spreadsheetid,
                                     range=body['range'],
@@ -93,7 +94,7 @@ class GoogleSheet(object):
         response = request.execute()
         return response
 
-    def get_columns(self):
+    def _get_columns(self):
         r = f'{self.name}!A1:AG1'
         columns = self.read_values(r)[0]
         for i, c in enumerate(columns):
@@ -168,7 +169,7 @@ class Template(GoogleSheet):
         Returns:
         The copied file if successful, None otherwise.
          """
-        service =  build('drive', 'v3', credentials=self.Auth(), cache_discovery=False)
+        service =  build('drive', 'v3', credentials=self._auth(), cache_discovery=False)
         body = {
                 'name': copy_title, 
                 'title': copy_title,
@@ -195,14 +196,14 @@ class Template(GoogleSheet):
         )
         print(create_response)
         permissions_response = request.execute()
-        name_response = self.rename_sheet(create_response['id'],
+        name_response = self._rename_sheet(create_response['id'],
                             worksheet)
 
         return {'create': create_response, 
                 'permissions': permissions_response,
                 'name' : name_response}
         
-    def rename_sheet(self, spreadsheetId, new_name, sheet_id=0):
+    def _rename_sheet(self, spreadsheetId, new_name, sheet_id=0):
         body = {
             'requests': [
                 {
@@ -217,7 +218,7 @@ class Template(GoogleSheet):
             ]
         }
 
-        service = build('sheets', 'v4', credentials=self.Auth(),
+        service = build('sheets', 'v4', credentials=self._auth(),
                         cache_discovery=False).spreadsheets()
         request = service.batchUpdate(spreadsheetId=spreadsheetId, body=body)
         return request.execute()

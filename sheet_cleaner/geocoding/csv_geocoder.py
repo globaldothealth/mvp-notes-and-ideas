@@ -72,7 +72,7 @@ class CSVGeocoder:
         self.misses = Counter()
         
 
-    def Geocode(self, city :str="", province :str="", country :str="") -> Geocode:
+    def geocode(self, city :str="", province :str="", country :str="") -> Geocode:
         """Geocode matches the given locations to their Geocode information
         
         At least one of city, province, country must be set.
@@ -87,7 +87,7 @@ class CSVGeocoder:
             return None
         return geocode
 
-    def WriteMissesToFile(self, file):
+    def write_misses_to_csv(self, file):
         """Writes misses as csv to a file.
         Columns are 'city', 'province', 'country', 'count'.
         """

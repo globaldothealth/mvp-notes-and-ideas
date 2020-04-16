@@ -1,20 +1,28 @@
 import logging
-from functions import values2dataframe, duplicate_rows_per_column, trim_df, fix_sex, fix_na, generate_error_tables
+import os
+from datetime import datetime
+from typing import List
+import configparser
 
 import pandas as pd
 
-from datetime import datetime
-import os
+from geocoding import csv_geocoder
+from spreadsheet import GoogleSheet
+
+from functions import (duplicate_rows_per_column, fix_na, fix_sex,
+                       generate_error_tables, trim_df, values2dataframe)
+
 
 class SheetProcessor:
 
-    def __init__(self, sheets, geocoder, config):
+    def __init__(self, sheets: List[GoogleSheet], geocoder: csv_geocoder.CSVGeocoder, config: configparser.ConfigParser):
         self.for_github = []
         self.sheets = sheets
         self.geocoder = geocoder
         self.config = config
 
-    def Process(self):
+    def process(self):
+        """Does all the heavy handling of spreadsheets, writing output to CSV files."""
         for s in self.sheets:
             logging.info("Processing sheet %s", s.name)
 
@@ -81,7 +89,7 @@ class SheetProcessor:
         # Fill geo columns.
         geocode_matched = 0
         for i, row in all_data.iterrows():
-            geocode = self.geocoder.Geocode(row.city, row.province, row.country)
+            geocode = self.geocoder.geocode(row.city, row.province, row.country)
             if not geocode:
                 continue
             geocode_matched += 1
@@ -97,7 +105,7 @@ class SheetProcessor:
         logging.info("Geocode matched %d/%d", geocode_matched, len(all_data))
         logging.info("Top 10 geocode misses: %s", self.geocoder.misses.most_common(10))
         with open("geocode_misses.csv", "w") as f:
-            self.geocoder.WriteMissesToFile(f)
+            self.geocoder.write_misses_to_csv(f)
             logging.info("Wrote all geocode misses to geocode_misses.csv")
         # Reorganize csv columns so that they are in the same order as when we
         # used to have those geolocation within the spreadsheet.
@@ -114,7 +122,8 @@ class SheetProcessor:
         logging.info("Wrote %s, %s", file_name, latest_name)
         self.for_github.extend([file_name, latest_name])
 
-    def PushToGithub(self):
+    def push_to_github(self):
+        """Pushes csv files created by Process to Github."""
         logging.info("Pushing to github")
         # Create script for uploading to github
         script  = 'set -e\n'
