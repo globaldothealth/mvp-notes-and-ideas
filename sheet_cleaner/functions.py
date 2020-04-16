@@ -14,7 +14,7 @@ from typing import List
 import pandas as pd
 import numpy as np 
 
-from constants import rgx_age, rgx_sex, rgx_country, rgx_date, rgx_lives_in_wuhan, date_columns, column_to_type
+from constants import rgx_age, rgx_sex, rgx_date, rgx_lives_in_wuhan, date_columns, column_to_type
 from objects import GoogleSheet
 
 
@@ -146,7 +146,6 @@ def generate_error_tables(data):
     table = pd.DataFrame(columns=['row', 'ID', 'value'])
     table = ErrorTest(data, ['age'], rgx_age, table)
     table = ErrorTest(data, ['sex'], rgx_sex, table)
-    table = ErrorTest(data, ['city', 'province', 'country'], rgx_country, table)
     table = ErrorTest(data, date_columns, rgx_date, table)
     table = ErrorTest(data, ['lives_in_Wuhan'], rgx_lives_in_wuhan, table)
     fixable_errors = pd.DataFrame(columns=['row', 'ID', 'column', 'value', 'fix'])
