@@ -29,7 +29,6 @@ class GoogleSheet(object):
         self.columns = self.get_columns()
         self.column_dict = {c:self.index2A1(i) for i,c in enumerate(self.columns)}
 
-
     def Auth(self):
         '''Gets credentials for sheet and drive API access'''
 
@@ -70,7 +69,6 @@ class GoogleSheet(object):
     
         Returns : 
             list: values from range_
-
     	'''
     
         service = build('sheets', 'v4', credentials=self.Auth(), cache_discovery=False)
@@ -103,7 +101,7 @@ class GoogleSheet(object):
                 if c.strip() == '' and columns[i-1] == 'province':
                     columns[i] = 'country'
 
-                # some white space gets added unoticed sometimes 
+                # some white space gets added unnoticed sometimes 
                 columns[i] = c.strip()
         return columns
         
@@ -116,8 +114,7 @@ class GoogleSheet(object):
         '''
         assert 'fix' in error_table.columns
         assert 'value' in error_table.columns 
-           
-        fixed = 0 
+
         for _, error in error_table.iterrows():    
             row       = error['row']
             a1 = self.column_dict[error['column']] + row 
@@ -131,11 +128,9 @@ class GoogleSheet(object):
                 'values': [[error['fix']]]
             }   
             self.insert_values(body)
-            fixed += 1
-        
-        return fixed
 
-    def index2A1(self, num: int) -> str:
+    @staticmethod
+    def index2A1(num: int) -> str:
         '''
         Converts column index to A1 notation. 
     
@@ -182,7 +177,6 @@ class Template(GoogleSheet):
         request = service.files().copy(fileId=self.spreadsheetid, body=body)
         create_response = request.execute()
         
-        
         message = "A new COVID-19 Sheet has been created!\n"
         message += f"https://docs.google.com/spreadsheets/d/{create_response['id']}/"
 
@@ -209,7 +203,6 @@ class Template(GoogleSheet):
                 'name' : name_response}
         
     def rename_sheet(self, spreadsheetId, new_name, sheet_id=0):
-        
         body = {
             'requests': [
                 {
