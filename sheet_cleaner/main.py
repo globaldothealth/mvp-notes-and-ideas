@@ -5,7 +5,6 @@ import argparse
 import configparser
 import logging
 import os
-import shutil
 import time
 
 import pandas as pd

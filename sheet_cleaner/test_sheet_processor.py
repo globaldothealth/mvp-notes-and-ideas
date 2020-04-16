@@ -41,3 +41,5 @@ class TestSheetProcessor(unittest.TestCase):
             ])
             processor = SheetProcessor([mock_sheet], geocoder, config)
             processor.process()
+            # Checking that no exception is raised is fine for now.
+            # We could also check for output files in tmpdirname later on.
