@@ -86,3 +86,11 @@ class CSVGeocoder:
             self.misses.update([Triple(city, province, country)])
             return None
         return geocode
+
+    def WriteMissesToFile(self, file):
+        """Writes misses as csv to a file.
+        Columns are 'city', 'province', 'country', 'count'.
+        """
+        writer = csv.writer(file)
+        for triple in self.misses:
+            writer.writerow([triple.city, triple.province, triple.country, self.misses[triple]])
