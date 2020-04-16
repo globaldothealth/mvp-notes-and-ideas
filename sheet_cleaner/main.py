@@ -90,7 +90,7 @@ def main():
         directory   = config['FILES']['ERRORS']
         file_name   = f'{s.name}.error-report.csv'
         error_file  = os.path.join(directory, file_name)
-        non_fixable.to_csv(error_file, index=False, header=True)
+        non_fixable.to_csv(error_file, index=False, header=True, encoding="utf-8")
         for_github.append(error_file)
         
     # Combine data from all sheets into a single datafile
@@ -134,8 +134,8 @@ def main():
     dt = datetime.now().strftime('%Y-%m-%dT%H%M%S')
     file_name   = config['FILES']['DATA'].replace('TIMESTAMP', dt)
     latest_name = os.path.join(config['FILES']['LATEST'], 'latestdata.csv')
-    all_data.to_csv(file_name, index=False)
-    all_data.to_csv(latest_name, index=False)
+    all_data.to_csv(file_name, index=False, encoding="utf-8")
+    all_data.to_csv(latest_name, index=False, encoding="utf-8")
     logging.info("Wrote %s, %s", file_name, latest_name)
 
     if args.push_to_git:
