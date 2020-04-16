@@ -19,7 +19,7 @@ class GoogleSheet(object):
     :base_id: -> str, base string to generate IDs from.
     :name: -> str, sheet name.
     '''
-    def __init__(self, spreadsheetid, base_id, name, token, credentials, is_service_account):
+    def __init__(self, spreadsheetid, name, base_id, token, credentials, is_service_account):
         self.spreadsheetid = spreadsheetid 
         self.name = name
         self.base_id = base_id
