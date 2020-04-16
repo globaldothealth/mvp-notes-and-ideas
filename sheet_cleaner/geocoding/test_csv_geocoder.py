@@ -11,7 +11,7 @@ class TestCSVGeocoder(unittest.TestCase):
         self.geocoder = csv_geocoder.CSVGeocoder(os.path.join(cur_dir, "geo_admin.tsv"))
 
     def test_found(self):
-        geo = self.geocoder.Geocode("Sunac City, Shangcheng, Changchun City", "Jilin", "China")
+        geo = self.geocoder.geocode("Sunac City, Shangcheng, Changchun City", "Jilin", "China")
         self.assertAlmostEqual(geo.lat, 43.8296097)
         self.assertAlmostEqual(geo.lng, 125.25924)
         self.assertEqual(geo.geo_resolution, "point")
@@ -24,14 +24,14 @@ class TestCSVGeocoder(unittest.TestCase):
         self.assertCountEqual(set(), self.geocoder.misses)
 
     def test_not_found(self):
-        self.assertIsNone(self.geocoder.Geocode("foo", "bar", "baz"))
-        self.assertIsNone(self.geocoder.Geocode("foo", "bar", "baz"))
+        self.assertIsNone(self.geocoder.geocode("foo", "bar", "baz"))
+        self.assertIsNone(self.geocoder.geocode("foo", "bar", "baz"))
         self.assertEqual(
             [(csv_geocoder.Triple("foo", "bar", "baz"), 2)],
             self.geocoder.misses.most_common(1))
     
     def test_write_to_csv(self):
-        self.assertIsNone(self.geocoder.Geocode("foo", "bar", "baz"))
+        self.assertIsNone(self.geocoder.geocode("foo", "bar", "baz"))
         file = io.StringIO("")
-        self.geocoder.WriteMissesToFile(file)
+        self.geocoder.write_misses_to_csv(file)
         self.assertEqual('foo,bar,baz,1\r\n', file.getvalue())
