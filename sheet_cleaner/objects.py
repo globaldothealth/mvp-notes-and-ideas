@@ -237,9 +237,9 @@ class Template(GoogleSheet):
         self.token = token
         self.credentials = credentials
         self.is_service_account = is_service_account
+        self.responses = {}
 
-
-    def copy(self, copy_title, emailto, group=True):
+    def copy(self, copy_title, worksheet,  emailto):
         from apiclient import errors
         """Copy an existing file.
 
@@ -266,9 +266,9 @@ class Template(GoogleSheet):
         message += str(create_response['id']) + r"/"
 
         permissions = {
-            "type": "group" if group else "user", 
+            "type": "group", 
             "role": "writer",
-            "emailAddress": emailto,
+            "emailAddress": 'thomas.brewer@childrens.harvard.edu',
             "sendNotificationEmail" : True,
             "emailMessage" : message 
         }
@@ -278,14 +278,15 @@ class Template(GoogleSheet):
             body=permissions,
             fields='id' 
         )
+        print(create_response)
         permissions_response = request.execute()
         name_response = self.rename_sheet(create_response['id'],
-                            copy_title)
+                            worksheet)
 
         return {'create': create_response, 
                 'permissions': permissions_response,
                 'name' : name_response}
-
+        
     def rename_sheet(self, spreadsheetId, new_name, sheet_id=0):
         
         body = {
@@ -306,5 +307,6 @@ class Template(GoogleSheet):
                         cache_discovery=False).spreadsheets()
         request = service.batchUpdate(spreadsheetId=spreadsheetId, body=body)
         return request.execute()
+
 
 
